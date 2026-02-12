@@ -62,4 +62,14 @@ MIT License — 詳見 [LICENSE](LICENSE)
 
 ---
 
+## 📬 聯絡我
+
+有合作需求、客製化開發、或任何問題，歡迎聯繫：
+
+- 📧 Email: [mccoychang@gmail.com](mailto:mccoychang@gmail.com)
+- 💼 Fiverr: [fiverr.com/mccoychang](https://www.fiverr.com/mccoychang)
+- 🐙 GitHub: [github.com/mccoychang](https://github.com/mccoychang)
+
+---
+
 Made with 💓 by McCoychang
