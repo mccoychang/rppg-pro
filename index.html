@@ -1,0 +1,2050 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>💓 rPPG 心率監測器 Pro — Heart Rate & HRV Monitor</title>
+    <meta name="description" content="使用攝影機即時偵測心率、HRV、血氧、呼吸率的 rPPG 專業監測工具">
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#ff2d55">
+    <!-- iOS PWA -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="rPPG Pro">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/face_detection.js"
+        crossorigin="anonymous"></script>
+    <script src="signal.js"></script>
+    <script src="analysis.js"></script>
+    <script src="history.js"></script>
+    <style>
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-card: #1a1a2e;
+            --accent-primary: #ff2d55;
+            --accent-secondary: #5856d6;
+            --accent-tertiary: #30d158;
+            --accent-warning: #ff9f0a;
+            --accent-cyan: #5ac8fa;
+            --text-primary: #f5f5f7;
+            --text-secondary: #8e8e93;
+            --text-tertiary: #636366;
+            --border-color: rgba(255, 255, 255, 0.08);
+            --glow-red: rgba(255, 45, 85, 0.3);
+            --glow-purple: rgba(88, 86, 214, 0.3);
+            --glow-green: rgba(48, 209, 88, 0.3);
+        }
+
+        [data-theme="light"] {
+            --bg-primary: #f2f2f7;
+            --bg-secondary: #ffffff;
+            --bg-card: #ffffff;
+            --text-primary: #1c1c1e;
+            --text-secondary: #636366;
+            --text-tertiary: #aeaeb2;
+            --border-color: rgba(0, 0, 0, 0.08);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        .bg-anim {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .bg-anim::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(ellipse at 30% 20%, rgba(255, 45, 85, 0.04)0%, transparent 50%), radial-gradient(ellipse at 70% 80%, rgba(88, 86, 214, 0.04)0%, transparent 50%);
+            animation: bgP 8s ease-in-out infinite alternate;
+        }
+
+        @keyframes bgP {
+            0% {
+                transform: rotate(0) scale(1)
+            }
+
+            100% {
+                transform: rotate(3deg) scale(1.05)
+            }
+        }
+
+        [data-theme="light"] .bg-anim::before {
+            opacity: 0.3;
+        }
+
+        .app {
+            position: relative;
+            z-index: 1;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .header-left h1 {
+            font-size: 1.8rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header-left p {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        .header-right {
+            display: flex;
+            gap: 8px;
+        }
+
+        .icon-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-card);
+            color: var(--text-primary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            transition: all 0.2s;
+        }
+
+        .icon-btn:hover {
+            transform: translateY(-2px);
+            border-color: var(--accent-secondary);
+        }
+
+        .reorder-btns {
+            display: flex;
+            gap: 2px;
+        }
+
+        .reorder-btns button {
+            width: 22px;
+            height: 22px;
+            border-radius: 5px;
+            border: 1px solid var(--border-color);
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 0.55rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            padding: 0;
+        }
+
+        .reorder-btns button:hover {
+            background: rgba(255, 149, 0, 0.2);
+            color: #ff9500;
+            border-color: rgba(255, 149, 0, 0.4);
+        }
+
+        .cam-select:focus {
+            outline: none;
+            border-color: var(--accent-secondary);
+        }
+
+        .threshold-wrap {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 8px;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .threshold-wrap label {
+            white-space: nowrap;
+        }
+
+        .threshold-wrap input[type=range] {
+            flex: 1;
+            accent-color: var(--accent-secondary);
+            height: 4px;
+            cursor: pointer;
+        }
+
+        .threshold-wrap .val {
+            min-width: 32px;
+            text-align: right;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--accent-secondary);
+            font-weight: 600;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 16px;
+            position: relative;
+            transition: background 0.3s;
+        }
+
+        .card-title {
+            font-size: 0.72rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* Layout */
+        .grid-main {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .grid-metrics {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .grid-bottom {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 10px;
+        }
+
+        /* Video */
+        .video-wrap {
+            border-radius: 12px;
+            overflow: hidden;
+            background: #000;
+            aspect-ratio: 4/3;
+            position: relative;
+        }
+
+        #webcam {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1);
+            display: block;
+        }
+
+        #faceCanvas {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            transform: scaleX(-1);
+        }
+
+        .vid-overlay {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(10px);
+            padding: 4px 10px;
+            border-radius: 16px;
+            font-size: 0.7rem;
+        }
+
+        .rec-dot {
+            width: 7px;
+            height: 7px;
+            background: var(--accent-primary);
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1
+            }
+
+            50% {
+                opacity: 0.3
+            }
+        }
+
+        .vid-placeholder {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            background: linear-gradient(135deg, var(--bg-secondary), var(--bg-card));
+        }
+
+        .vid-placeholder .cam-icon {
+            font-size: 2.5rem;
+            opacity: 0.4;
+        }
+
+        .vid-placeholder p {
+            color: var(--text-secondary);
+            font-size: 0.82rem;
+        }
+
+        /* Metric card */
+        .m-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 14px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .m-card .m-label {
+            font-size: 0.62rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .m-card .m-val {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.8rem;
+            font-weight: 700;
+            line-height: 1;
+            margin-bottom: 2px;
+        }
+
+        .m-card .m-ref {
+            font-size: 0.58rem;
+            color: var(--text-tertiary);
+            margin-top: 4px;
+            opacity: 0.7;
+        }
+
+        .m-card .m-unit {
+            font-size: 0.65rem;
+            color: var(--text-tertiary);
+        }
+
+        .m-card.hr .m-val {
+            color: var(--accent-primary);
+            text-shadow: 0 0 20px var(--glow-red);
+        }
+
+        .m-card.hrv .m-val {
+            color: var(--accent-secondary);
+            text-shadow: 0 0 20px var(--glow-purple);
+        }
+
+        .m-card.quality .m-val {
+            color: var(--accent-tertiary);
+        }
+
+        .m-card.spo2 .m-val {
+            color: var(--accent-cyan);
+        }
+
+        .m-card.breath .m-val {
+            color: #66d4cf;
+        }
+
+        .m-card.emotion .m-val {
+            font-size: 1.4rem;
+        }
+
+        /* Charts */
+        .chart-wrap {
+            height: 150px;
+            position: relative;
+        }
+
+        .chart-wrap canvas {
+            width: 100%;
+            height: 100%;
+            border-radius: 8px;
+        }
+
+        .trend-wrap {
+            height: 120px;
+            position: relative;
+        }
+
+        .trend-wrap canvas {
+            width: 100%;
+            height: 100%;
+            border-radius: 8px;
+        }
+
+        /* Buttons */
+        .btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 12px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn.start {
+            background: linear-gradient(135deg, var(--accent-primary), #ff6b81);
+            color: #fff;
+            box-shadow: 0 4px 16px var(--glow-red);
+        }
+
+        .btn.stop {
+            background: linear-gradient(135deg, var(--accent-secondary), #7b7be8);
+            color: #fff;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+        }
+
+        .btn-sm {
+            padding: 8px 14px;
+            font-size: 0.75rem;
+            border-radius: 10px;
+            width: auto;
+        }
+
+        .status-bar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 8px;
+            border-radius: 10px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            margin-top: 10px;
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+        }
+
+        .status-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--text-tertiary);
+        }
+
+        .status-bar.active .status-dot {
+            background: var(--accent-tertiary);
+            animation: pulse 1.5s infinite;
+        }
+
+        .status-bar.calibrating .status-dot {
+            background: var(--accent-warning);
+            animation: pulse 0.8s infinite;
+        }
+
+        .cal-bar {
+            width: 100%;
+            height: 3px;
+            background: var(--bg-secondary);
+            border-radius: 2px;
+            margin-top: 8px;
+            overflow: hidden;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .cal-bar.vis {
+            opacity: 1;
+        }
+
+        .cal-bar .fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+            border-radius: 2px;
+            transition: width 0.3s;
+            width: 0%;
+        }
+
+        /* Bottom stats */
+        .s-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .s-card .s-label {
+            font-size: 0.6rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-tertiary);
+            margin-bottom: 3px;
+        }
+
+        .s-card .s-val {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        /* HRV detail panel */
+        .hrv-detail {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+        }
+
+        .hrv-item {
+            text-align: center;
+            padding: 8px;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .hrv-item .hrv-label {
+            font-size: 0.58rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: var(--text-tertiary);
+            margin-bottom: 2px;
+        }
+
+        .hrv-item .hrv-ref {
+            font-size: 0.52rem;
+            color: var(--text-tertiary);
+            margin-top: 3px;
+            opacity: 0.7;
+        }
+
+        .hrv-item .hrv-val {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--accent-secondary);
+        }
+
+        .heartbeat-icon {
+            display: inline-block;
+            font-size: 1rem;
+        }
+
+        .heartbeat-icon.beating {
+            animation: hb 1s infinite;
+        }
+
+        @keyframes hb {
+
+            0%,
+            100% {
+                transform: scale(1)
+            }
+
+            15% {
+                transform: scale(1.3)
+            }
+
+            30% {
+                transform: scale(1)
+            }
+
+            45% {
+                transform: scale(1.2)
+            }
+        }
+
+        /* Multi-person badge */
+        .person-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 8px;
+            border-radius: 8px;
+            font-size: 0.65rem;
+            font-weight: 600;
+            background: rgba(88, 86, 214, 0.15);
+            color: var(--accent-secondary);
+        }
+
+        @media(max-width:900px) {
+            .grid-main {
+                grid-template-columns: 1fr;
+            }
+
+            .grid-metrics {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .grid-bottom {
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            .hrv-detail {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media(max-width:500px) {
+            .app {
+                padding: 8px;
+            }
+
+            .header h1 {
+                font-size: 1rem;
+            }
+
+            .header p {
+                font-size: 0.55rem;
+            }
+
+            .card {
+                padding: 10px;
+            }
+
+            .card-title {
+                font-size: 0.7rem;
+            }
+
+            .metric {
+                padding: 6px;
+            }
+
+            .metric .value {
+                font-size: 1.2rem;
+            }
+
+            .metric .label {
+                font-size: 0.5rem;
+            }
+
+            .grid-metrics {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 6px;
+            }
+
+            .grid-bottom {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 6px;
+            }
+
+            .grid-bottom .stat-box {
+                padding: 8px 4px;
+            }
+
+            .grid-bottom .stat-box .value {
+                font-size: 0.9rem;
+            }
+
+            .grid-bottom .stat-box .label {
+                font-size: 0.5rem;
+            }
+
+            .hrv-detail {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 4px;
+            }
+
+            .cam-select {
+                font-size: 0.65rem;
+                padding: 6px;
+            }
+
+            .btn {
+                padding: 10px;
+                font-size: 0.75rem;
+            }
+
+            .threshold-wrap {
+                font-size: 0.65rem;
+            }
+
+            #harmonicDetail {
+                grid-template-columns: repeat(3, 1fr) !important;
+                gap: 4px !important;
+            }
+
+            .icon-btn {
+                width: 32px;
+                height: 32px;
+                font-size: 0.85rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="bg-anim"></div>
+    <div class="app">
+        <div class="header">
+            <div class="header-left">
+                <h1><span class="heartbeat-icon" id="heartIcon">💓</span> rPPG Pro 心率監測器</h1>
+                <p>POS+CHROM 融合 · Welch FFT · 多區域 ROI · 品質門控</p>
+            </div>
+            <div class="header-right">
+                <button class="icon-btn" onclick="toggleTheme()" title="切換主題" id="themeBtn">🌙</button>
+                <button class="icon-btn" onclick="toggleSound()" title="心跳音效" id="soundBtn">🔇</button>
+                <button class="icon-btn" onclick="exportReport()" title="匯出報告">📄</button>
+            </div>
+        </div>
+
+        <!-- User Account Bar -->
+        <div
+            style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--bg-secondary);border-radius:10px;margin-bottom:12px;border:1px solid var(--border-color)">
+            <span style="font-size:0.75rem;color:var(--text-secondary)">👤 使用者</span>
+            <select id="userSelect" onchange="switchUser(this.value)"
+                style="flex:1;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border-color);border-radius:6px;padding:5px 8px;font-size:0.7rem;font-family:inherit">
+                <option value="default">訪客</option>
+            </select>
+            <button onclick="toggleAddUser()" id="addUserBtn"
+                style="background:rgba(52,199,89,0.2);color:#34c759;border:1px solid rgba(52,199,89,0.3);padding:4px 10px;border-radius:6px;font-size:0.65rem;cursor:pointer;white-space:nowrap">
+                ＋ 新增
+            </button>
+            <div id="addUserInput" style="display:none;display:none;align-items:center;gap:4px">
+                <input type="text" id="newUserName" placeholder="輸入名稱"
+                    style="width:80px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border-color);border-radius:6px;padding:4px 6px;font-size:0.65rem;font-family:inherit"
+                    onkeydown="if(event.key==='Enter')confirmAddUser()">
+                <button onclick="confirmAddUser()"
+                    style="background:rgba(52,199,89,0.3);color:#34c759;border:1px solid rgba(52,199,89,0.4);padding:4px 8px;border-radius:6px;font-size:0.6rem;cursor:pointer">✓</button>
+                <button onclick="toggleAddUser()"
+                    style="background:rgba(255,45,85,0.15);color:#ff2d55;border:1px solid rgba(255,45,85,0.3);padding:4px 6px;border-radius:6px;font-size:0.6rem;cursor:pointer">✕</button>
+            </div>
+        </div>
+
+        <div class="grid-main">
+            <!-- Left: Video -->
+            <div class="card">
+                <div class="card-title">📹 即時影像 <span class="person-badge" id="personBadge" style="display:none">👤
+                        <span id="personCount">1</span> 人</span></div>
+                <div class="video-wrap" id="videoWrap">
+                    <video id="webcam" autoplay playsinline muted></video>
+                    <canvas id="faceCanvas"></canvas>
+                    <div class="vid-overlay" id="vidOverlay" style="display:none">
+                        <div class="rec-dot"></div><span>偵測中</span>
+                    </div>
+                    <div class="vid-placeholder" id="vidPlaceholder">
+                        <div class="cam-icon">📷</div>
+                        <p>點擊下方按鈕開啟攝影機</p>
+                    </div>
+                </div>
+                <div class="cal-bar" id="calBar">
+                    <div class="fill" id="calFill"></div>
+                </div>
+                <div class="status-bar" id="statusBar">
+                    <div class="status-dot"></div><span id="statusText">等待啟動...</span>
+                </div>
+                <select class="cam-select" id="camSelect">
+                    <option value="">📷 選擇鏡頭（預設）</option>
+                </select>
+                <div class="threshold-wrap">
+                    <label>🔒 品質門檻</label>
+                    <input type="range" id="qualThreshold" min="10" max="95" value="70"
+                        oninput="document.getElementById('threshVal').textContent=this.value+'%'">
+                    <span class="val" id="threshVal">70%</span>
+                </div>
+                <button class="btn start" id="startBtn" onclick="toggleMonitoring()">🚀 開始偵測</button>
+            </div>
+
+            <!-- Right: Sortable Sections -->
+            <div id="sortableContainer" style="display:flex;flex-direction:column;gap:16px;">
+                <div class="sortable-section" data-section="metrics">
+                    <div class="card">
+                        <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
+                            <span>📊 即時數據</span>
+                            <div class="reorder-btns">
+                                <button onclick="moveSection(this,-1)" title="上移">▲</button>
+                                <button onclick="moveSection(this,1)" title="下移">▼</button>
+                            </div>
+                        </div>
+                        <div class="grid-metrics">
+                            <div class="m-card hr">
+                                <div class="m-label">心率</div>
+                                <div class="m-val" id="hrVal">--</div>
+                                <div class="m-unit">BPM</div>
+                                <div class="m-ref">正常 60-100</div>
+                            </div>
+                            <div class="m-card hrv">
+                                <div class="m-label">HRV (SDNN)</div>
+                                <div class="m-val" id="hrvVal">--</div>
+                                <div class="m-unit">ms</div>
+                                <div class="m-ref">正常 50-100</div>
+                            </div>
+                            <div class="m-card quality">
+                                <div class="m-label">訊號品質</div>
+                                <div class="m-val" id="qualVal">--</div>
+                                <div class="m-unit">%</div>
+                                <div class="m-ref">良好 >70%</div>
+                            </div>
+                            <div class="m-card spo2">
+                                <div class="m-label">血氧 SpO2</div>
+                                <div class="m-val" id="spo2Val">--</div>
+                                <div class="m-unit">%</div>
+                                <div class="m-ref">正常 95-100</div>
+                            </div>
+                            <div class="m-card breath">
+                                <div class="m-label">呼吸頻率</div>
+                                <div class="m-val" id="breathVal">--</div>
+                                <div class="m-unit">次/分</div>
+                                <div class="m-ref">正常 12-20</div>
+                            </div>
+                            <div class="m-card emotion">
+                                <div class="m-label">情緒狀態</div>
+                                <div class="m-val" id="emotionVal">--</div>
+                                <div class="m-unit" id="emotionLabel"></div>
+                                <div class="m-ref">😊放鬆 → 😰緊張</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sortable-section" data-section="hrv">
+                    <div class="card">
+                        <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
+                            <span>💜 HRV 詳細指標</span>
+                            <div class="reorder-btns">
+                                <button onclick="moveSection(this,-1)" title="上移">▲</button>
+                                <button onclick="moveSection(this,1)" title="下移">▼</button>
+                            </div>
+                        </div>
+                        <div class="hrv-detail">
+                            <div class="hrv-item">
+                                <div class="hrv-label">RMSSD</div>
+                                <div class="hrv-val" id="rmssdVal">--</div>
+                                <div class="hrv-ref">正常 20-50ms</div>
+                            </div>
+                            <div class="hrv-item">
+                                <div class="hrv-label">pNN50</div>
+                                <div class="hrv-val" id="pnn50Val">--%</div>
+                                <div class="hrv-ref">正常 >3%</div>
+                            </div>
+                            <div class="hrv-item">
+                                <div class="hrv-label">LF/HF</div>
+                                <div class="hrv-val" id="lfhfVal">--</div>
+                                <div class="hrv-ref">平衡 0.5-2.0</div>
+                            </div>
+                            <div class="hrv-item">
+                                <div class="hrv-label">Mean RR</div>
+                                <div class="hrv-val" id="meanRRVal">--ms</div>
+                                <div class="hrv-ref">正常 600-1000ms</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sortable-section" data-section="signal">
+                    <div class="card">
+                        <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
+                            <span>〰️ PPG 訊號 (POS+CHROM Fusion)</span>
+                            <div class="reorder-btns">
+                                <button onclick="moveSection(this,-1)" title="上移">▲</button>
+                                <button onclick="moveSection(this,1)" title="下移">▼</button>
+                            </div>
+                        </div>
+                        <div class="chart-wrap"><canvas id="signalCanvas"></canvas></div>
+                    </div>
+                </div>
+
+                <div class="sortable-section" data-section="trend">
+                    <div class="card">
+                        <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
+                            <span>📈 心率趨勢</span>
+                            <div class="reorder-btns">
+                                <button onclick="moveSection(this,-1)" title="上移">▲</button>
+                                <button onclick="moveSection(this,1)" title="下移">▼</button>
+                            </div>
+                        </div>
+                        <div class="trend-wrap"><canvas id="trendCanvas"></canvas></div>
+                    </div>
+                </div>
+
+                <div class="sortable-section" data-section="harmonics">
+                    <div class="card">
+                        <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
+                            <span>☯️ 脈診分析（王唯工諧波）<span id="constitutionBadge"
+                                    style="font-size:0.75rem;opacity:0.8;margin-left:8px"></span></span>
+                            <div class="reorder-btns">
+                                <button onclick="moveSection(this,-1)" title="上移">▲</button>
+                                <button onclick="moveSection(this,1)" title="下移">▼</button>
+                            </div>
+                        </div>
+                        <div class="chart-wrap"><canvas id="harmonicCanvas"></canvas></div>
+                        <div id="harmonicDetail"
+                            style="display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:6px;margin-top:10px;font-size:0.65rem;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Stats -->
+        <div class="grid-bottom">
+            <div class="s-card">
+                <div class="s-label">測量時長</div>
+                <div class="s-val" id="duration">00:00</div>
+            </div>
+            <div class="s-card">
+                <div class="s-label">平均心率</div>
+                <div class="s-val" id="avgHR">--</div>
+            </div>
+            <div class="s-card">
+                <div class="s-label">最高心率</div>
+                <div class="s-val" id="maxHR">--</div>
+            </div>
+            <div class="s-card">
+                <div class="s-label">最低心率</div>
+                <div class="s-val" id="minHR">--</div>
+            </div>
+            <div class="s-card">
+                <div class="s-label">平均血氧</div>
+                <div class="s-val" id="avgSpO2">--</div>
+            </div>
+            <div class="s-card">
+                <div class="s-label">平均呼吸率</div>
+                <div class="s-val" id="avgBreath">--</div>
+            </div>
+        </div>
+
+        <!-- Stress Detection (Lie Detector) -->
+        <div class="card" style="margin-top:16px" id="stressCard">
+            <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
+                <span>🔍 壓力偵測模式</span>
+                <div style="display:flex;gap:6px">
+                    <button id="stressBtn" onclick="toggleStressMode()"
+                        style="background:rgba(255,149,0,0.2);color:#ff9500;border:1px solid rgba(255,149,0,0.3);padding:4px 12px;border-radius:6px;font-size:0.65rem;cursor:pointer">
+                        ▶️ 啟動
+                    </button>
+                </div>
+            </div>
+            <div id="stressPanel" style="display:none">
+                <!-- Phase indicator -->
+                <div id="stressPhase"
+                    style="text-align:center;padding:8px;font-size:0.75rem;color:var(--text-secondary)"></div>
+                <!-- Progress bar for baseline -->
+                <div id="stressProgress" style="display:none;margin:6px 0">
+                    <div style="background:rgba(255,255,255,0.08);border-radius:4px;height:6px;overflow:hidden">
+                        <div id="stressProgressBar"
+                            style="height:100%;width:0%;background:linear-gradient(90deg,#34c759,#30d158);border-radius:4px;transition:width 1s linear">
+                        </div>
+                    </div>
+                </div>
+                <!-- Stress gauge -->
+                <div style="display:flex;align-items:center;gap:12px;margin:10px 0">
+                    <div style="flex:1">
+                        <div
+                            style="display:flex;justify-content:space-between;font-size:0.55rem;color:var(--text-secondary);margin-bottom:2px">
+                            <span>😌 放鬆</span><span>😰 緊張</span><span>🚨 高壓</span>
+                        </div>
+                        <div
+                            style="background:rgba(255,255,255,0.08);border-radius:6px;height:18px;overflow:hidden;position:relative">
+                            <div id="stressGauge"
+                                style="height:100%;width:0%;border-radius:6px;transition:width 0.5s,background 0.5s;background:linear-gradient(90deg,#34c759,#ff9500,#ff2d55)">
+                            </div>
+                        </div>
+                    </div>
+                    <div style="text-align:center;min-width:50px">
+                        <div id="stressScore" style="font-size:1.4rem;font-weight:800;color:#34c759">0</div>
+                        <div style="font-size:0.5rem;color:var(--text-secondary)">壓力指數</div>
+                    </div>
+                </div>
+                <!-- Detail indicators -->
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:6px">
+                    <div
+                        style="text-align:center;padding:6px;background:rgba(255,45,85,0.08);border-radius:8px;border:1px solid rgba(255,45,85,0.15)">
+                        <div style="font-size:0.55rem;color:var(--text-secondary)">💓 心率變化</div>
+                        <div id="stressHR" style="font-size:0.9rem;font-weight:700;color:#ff2d55">--</div>
+                    </div>
+                    <div
+                        style="text-align:center;padding:6px;background:rgba(88,86,214,0.08);border-radius:8px;border:1px solid rgba(88,86,214,0.15)">
+                        <div style="font-size:0.55rem;color:var(--text-secondary)">📊 HRV 變化</div>
+                        <div id="stressHRV" style="font-size:0.9rem;font-weight:700;color:var(--accent-secondary)">--
+                        </div>
+                    </div>
+                    <div
+                        style="text-align:center;padding:6px;background:rgba(52,199,89,0.08);border-radius:8px;border:1px solid rgba(52,199,89,0.15)">
+                        <div style="font-size:0.55rem;color:var(--text-secondary)">🫁 呼吸變化</div>
+                        <div id="stressBreath" style="font-size:0.9rem;font-weight:700;color:#34c759">--</div>
+                    </div>
+                </div>
+                <!-- Verdict -->
+                <div id="stressVerdict"
+                    style="text-align:center;padding:10px;margin-top:8px;font-size:0.8rem;font-weight:600;border-radius:8px;display:none">
+                </div>
+                <!-- Disclaimer -->
+                <div style="text-align:center;font-size:0.5rem;color:var(--text-secondary);margin-top:6px;opacity:0.6">
+                    ⚠️ 僅供娛樂參考，緊張≠說謊，不具任何法律或醫學效力
+                </div>
+            </div>
+        </div>
+
+        <!-- History Records -->
+        <div class="card" style="margin-top:16px">
+            <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
+                <span>📋 歷史記錄</span>
+                <div style="display:flex;gap:6px">
+                    <button onclick="exportSessionsCSV()"
+                        style="background:rgba(88,86,214,0.2);color:var(--accent-secondary);border:1px solid rgba(88,86,214,0.3);padding:3px 8px;border-radius:6px;font-size:0.6rem;cursor:pointer">📥
+                        匯出 CSV</button>
+                    <button onclick="if(confirm('確定清除所有記錄？')){clearAllSessions().then(()=>loadHistoryUI())}"
+                        style="background:rgba(255,45,85,0.15);color:#ff2d55;border:1px solid rgba(255,45,85,0.3);padding:3px 8px;border-radius:6px;font-size:0.6rem;cursor:pointer">🗑️
+                        清除</button>
+                </div>
+            </div>
+            <div id="historyTable" style="overflow-x:auto;max-height:300px;overflow-y:auto">
+                <div style="text-align:center;color:var(--text-secondary);padding:20px;font-size:0.75rem">載入中...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ===== State =====
+        let isRunning = false, stream = null, animFrameId = null, startTime = null;
+        let samplingCanvas, samplingCtx, signalCanvas, signalCtx, faceCanvas, faceCtx, trendCanvas, trendCtx, harmonicCanvas, harmonicCtx;
+
+        const BUF = 300;
+        const gSig = [], rSig = [], bSig = [], ts = [];
+        const hrHist = [], rrIntervals = [];
+        let frameCount = 0, allHR = [], allSpO2 = [], allBreath = [], hrTrend = [];
+        let durationInterval = null;
+
+        // Face tracking
+        let mpFace = null, hasFaceAPI = false, lastFaceBox = null, smoothBox = null;
+        let allFaceBoxes = []; // multi-person
+        const SM = 0.4;
+
+        // Sound
+        let audioCtx = null, soundEnabled = false;
+
+        // Theme
+        let darkMode = true;
+
+        // ===== Multi-ROI =====
+        function getMultiROI(face, W, H) {
+            const f = face;
+            // Forehead
+            const fh = { x: f.x + f.w * 0.2, y: f.y - f.h * 0.15, w: f.w * 0.6, h: f.h * 0.18 };
+            // Left cheek
+            const lc = { x: f.x + f.w * 0.05, y: f.y + f.h * 0.45, w: f.w * 0.25, h: f.h * 0.25 };
+            // Right cheek
+            const rc = { x: f.x + f.w * 0.7, y: f.y + f.h * 0.45, w: f.w * 0.25, h: f.h * 0.25 };
+
+            return [fh, lc, rc].map(r => ({
+                x: Math.round(Math.max(0, Math.min(r.x, W - 2))),
+                y: Math.round(Math.max(0, Math.min(r.y, H - 2))),
+                w: Math.round(Math.min(r.w, W - r.x)),
+                h: Math.round(Math.min(r.h, H - r.y)),
+                faceX: Math.round(f.x), faceY: Math.round(f.y),
+                faceW: Math.round(f.w), faceH: Math.round(f.h)
+            })).filter(r => r.w > 5 && r.h > 5);
+        }
+
+        // ===== Init =====
+        async function init() {
+            signalCanvas = document.getElementById('signalCanvas');
+            signalCtx = signalCanvas.getContext('2d');
+            faceCanvas = document.getElementById('faceCanvas');
+            faceCtx = faceCanvas.getContext('2d');
+            trendCanvas = document.getElementById('trendCanvas');
+            trendCtx = trendCanvas.getContext('2d');
+            harmonicCanvas = document.getElementById('harmonicCanvas');
+            harmonicCtx = harmonicCanvas.getContext('2d');
+            samplingCanvas = document.createElement('canvas');
+            samplingCtx = samplingCanvas.getContext('2d', { willReadFrequently: true });
+            await initFaceDetector();
+            await populateCameras();
+            resizeAll(); window.addEventListener('resize', resizeAll);
+            drawEmptyChart(signalCanvas, signalCtx, '等待訊號...');
+            drawEmptyChart(trendCanvas, trendCtx, '等待趨勢數據...');
+            drawEmptyChart(harmonicCanvas, harmonicCtx, '等待脈診數據...');
+        }
+
+        async function populateCameras() {
+            try {
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const sel = document.getElementById('camSelect');
+                const currentVal = sel.value;
+                sel.innerHTML = '<option value="">📷 選擇鏡頭（預設）</option>';
+                devices.filter(d => d.kind === 'videoinput').forEach((d, i) => {
+                    const opt = document.createElement('option');
+                    opt.value = d.deviceId;
+                    opt.textContent = d.label || `鏡頭 ${i + 1}`;
+                    if (d.label && d.label.toLowerCase().includes('iphone')) opt.textContent = '📱 ' + d.label;
+                    sel.appendChild(opt);
+                });
+                if (currentVal) sel.value = currentVal;
+            } catch (e) { console.warn('Cannot enumerate cameras', e); }
+        }
+
+        function resizeAll() {
+            [signalCanvas, trendCanvas, harmonicCanvas].forEach(c => {
+                const r = c.parentElement.getBoundingClientRect();
+                c.width = r.width * devicePixelRatio; c.height = r.height * devicePixelRatio;
+                c.getContext('2d').scale(devicePixelRatio, devicePixelRatio);
+                c.style.width = r.width + 'px'; c.style.height = r.height + 'px';
+            });
+            const vr = document.getElementById('videoWrap').getBoundingClientRect();
+            faceCanvas.width = vr.width; faceCanvas.height = vr.height;
+        }
+
+        // ===== MediaPipe =====
+        async function initFaceDetector() {
+            try {
+                mpFace = new FaceDetection({ locateFile: (f) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/${f}` });
+                mpFace.setOptions({ model: 'short', minDetectionConfidence: 0.5 });
+                mpFace.onResults((res) => {
+                    allFaceBoxes = [];
+                    if (res.detections) {
+                        res.detections.forEach(d => {
+                            const bb = d.boundingBox;
+                            const vw = samplingCanvas.width, vh = samplingCanvas.height;
+                            allFaceBoxes.push({
+                                x: bb.xCenter * vw - (bb.width * vw) / 2,
+                                y: bb.yCenter * vh - (bb.height * vh) / 2,
+                                w: bb.width * vw, h: bb.height * vh
+                            });
+                        });
+                    }
+                    lastFaceBox = allFaceBoxes.length > 0 ? allFaceBoxes[0] : null;
+                    // Update person count
+                    const badge = document.getElementById('personBadge');
+                    if (allFaceBoxes.length > 0) {
+                        badge.style.display = 'inline-flex';
+                        document.getElementById('personCount').textContent = allFaceBoxes.length;
+                    } else { badge.style.display = 'none'; }
+                });
+                const tmp = document.createElement('canvas'); tmp.width = 10; tmp.height = 10;
+                await mpFace.send({ image: tmp });
+                hasFaceAPI = true;
+                console.log('✅ MediaPipe ready');
+            } catch (e) { console.warn('MediaPipe failed', e); hasFaceAPI = false; }
+        }
+
+        function lerp(a, b, t) { return a + (b - a) * t; }
+
+        function getSmoothed(raw) {
+            if (!raw) return null;
+            if (!smoothBox) smoothBox = { ...raw };
+            smoothBox.x = lerp(smoothBox.x, raw.x, SM);
+            smoothBox.y = lerp(smoothBox.y, raw.y, SM);
+            smoothBox.w = lerp(smoothBox.w, raw.w, SM);
+            smoothBox.h = lerp(smoothBox.h, raw.h, SM);
+            return { ...smoothBox };
+        }
+
+        // ===== Camera =====
+        async function startCamera() {
+            try {
+                const sel = document.getElementById('camSelect');
+                const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+                const constraints = {
+                    video: {
+                        width: { ideal: isMobile ? 320 : 640 },
+                        height: { ideal: isMobile ? 240 : 480 },
+                        frameRate: { ideal: isMobile ? 20 : 30 }
+                    }
+                };
+                if (sel.value) {
+                    constraints.video.deviceId = { exact: sel.value };
+                } else {
+                    constraints.video.facingMode = 'user';
+                }
+                stream = await navigator.mediaDevices.getUserMedia(constraints);
+                const v = document.getElementById('webcam'); v.srcObject = stream; await v.play();
+                samplingCanvas.width = v.videoWidth; samplingCanvas.height = v.videoHeight;
+                document.getElementById('vidPlaceholder').style.display = 'none';
+                document.getElementById('vidOverlay').style.display = 'flex';
+                // Refresh camera list after getting permission
+                await populateCameras();
+                return true;
+            } catch (e) { setStatus('error', '無法存取攝影機: ' + e.message); return false; }
+        }
+        function stopCamera() {
+            if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+            document.getElementById('webcam').srcObject = null;
+            document.getElementById('vidPlaceholder').style.display = 'flex';
+            document.getElementById('vidOverlay').style.display = 'none';
+        }
+
+        // ===== Sound =====
+        function playHeartbeat() {
+            if (!soundEnabled || !audioCtx) return;
+            const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+            o.type = 'sine'; o.frequency.value = 60;
+            g.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+            o.connect(g); g.connect(audioCtx.destination);
+            o.start(); o.stop(audioCtx.currentTime + 0.15);
+        }
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            if (soundEnabled && !audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            document.getElementById('soundBtn').textContent = soundEnabled ? '🔊' : '🔇';
+        }
+
+        // ===== Theme =====
+        function toggleTheme() {
+            darkMode = !darkMode;
+            document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : 'light');
+            document.getElementById('themeBtn').textContent = darkMode ? '🌙' : '☀️';
+        }
+
+        // ===== Toggle =====
+        async function toggleMonitoring() {
+            const btn = document.getElementById('startBtn');
+            if (!isRunning) {
+                btn.disabled = true; setStatus('calibrating', '正在啟動攝影機...');
+                if (!await startCamera()) { btn.disabled = false; return; }
+                isRunning = true; startTime = Date.now(); frameCount = 0;
+                gSig.length = 0; rSig.length = 0; bSig.length = 0; ts.length = 0; hrHist.length = 0; rrIntervals.length = 0;
+                allHR = []; allSpO2 = []; allBreath = []; hrTrend = [];
+                btn.className = 'btn stop'; btn.textContent = '⏹ 停止偵測'; btn.disabled = false;
+                document.getElementById('heartIcon').classList.add('beating');
+                document.getElementById('calBar').classList.add('vis');
+                durationInterval = setInterval(updateDuration, 1000);
+                processFrame();
+            } else {
+                isRunning = false; if (animFrameId) cancelAnimationFrame(animFrameId);
+                stopCamera(); clearInterval(durationInterval);
+                btn.className = 'btn start'; btn.textContent = '🚀 開始偵測';
+                document.getElementById('heartIcon').classList.remove('beating');
+                document.getElementById('calBar').classList.remove('vis');
+                faceCtx.clearRect(0, 0, faceCanvas.width, faceCanvas.height);
+                // Auto-save session to database
+                const elapsed = startTime ? Math.round((Date.now() - startTime) / 1000) : 0;
+                if (elapsed >= 5 && allHR.length > 0) {
+                    const avg = arr => arr.length ? Math.round(arr.reduce((a, b) => a + b) / arr.length) : null;
+                    saveSession({
+                        duration: elapsed,
+                        avgHR: avg(allHR), maxHR: allHR.length ? Math.max(...allHR) : null, minHR: allHR.length ? Math.min(...allHR) : null,
+                        avgHRV: dispHRV > 0 ? Math.round(dispHRV) : null,
+                        avgSpO2: avg(allSpO2), avgBreath: avg(allBreath),
+                        qualityScore: Math.round(dispQual),
+                        constitution: window._lastConstitution || '',
+                        constitutionEmoji: '',
+                        emotion: lastEmo ? lastEmo.state : '',
+                        harmonics: window._smoothHarmonics ? Array.from(window._smoothHarmonics) : null
+                    }).then(() => { loadHistoryUI(); });
+                    setStatus('idle', '✅ 偵測已停止，記錄已儲存');
+                } else {
+                    setStatus('idle', '偵測已停止（太短未儲存）');
+                }
+            }
+        }
+
+        // ===== Main Loop =====
+        function processFrame() {
+            if (!isRunning) return;
+            const video = document.getElementById('webcam');
+            if (video.readyState < 2) { animFrameId = requestAnimationFrame(processFrame); return; }
+
+            samplingCtx.drawImage(video, 0, 0, samplingCanvas.width, samplingCanvas.height);
+            const W = samplingCanvas.width, H = samplingCanvas.height;
+
+            if (hasFaceAPI && mpFace && frameCount % 3 === 0) mpFace.send({ image: video }).catch(() => { });
+
+            const smoothed = lastFaceBox ? getSmoothed(lastFaceBox) : null;
+
+            if (smoothed && smoothed.w > 10 && smoothed.h > 10) {
+                const rois = getMultiROI(smoothed, W, H);
+                drawOverlay(smoothed, rois);
+
+                // Average RGB across all ROIs (weighted: forehead 60%, cheeks 20% each)
+                const weights = [0.6, 0.2, 0.2];
+                let rAvg = 0, gAvg = 0, bAvg = 0, totalW = 0;
+                rois.forEach((roi, idx) => {
+                    const w = weights[idx] || 0.2;
+                    const rgb = extractRGB(roi);
+                    rAvg += rgb.r * w; gAvg += rgb.g * w; bAvg += rgb.b * w; totalW += w;
+                });
+                if (totalW > 0) { rAvg /= totalW; gAvg /= totalW; bAvg /= totalW; }
+
+                rSig.push(rAvg); gSig.push(gAvg); bSig.push(bAvg); ts.push(performance.now());
+                while (gSig.length > BUF) { gSig.shift(); rSig.shift(); bSig.shift(); ts.shift(); }
+
+                frameCount++;
+                const prog = Math.min(100, (frameCount / 150) * 100);
+                document.getElementById('calFill').style.width = prog + '%';
+
+                if (frameCount < 90) {
+                    setStatus('calibrating', `校準中... ${Math.round(prog)}%`);
+                } else {
+                    document.getElementById('calBar').classList.remove('vis');
+                    if (frameCount % 10 === 0) runAnalysis();
+                    setStatus('active', '🎯 多區域 ROI 追蹤中');
+                }
+                drawSignal();
+            } else {
+                faceCtx.clearRect(0, 0, faceCanvas.width, faceCanvas.height);
+                setStatus('calibrating', '未偵測到臉部，請面對鏡頭');
+            }
+            animFrameId = requestAnimationFrame(processFrame);
+        }
+
+        function extractRGB(roi) {
+            const d = samplingCtx.getImageData(roi.x, roi.y, roi.w, roi.h).data;
+            let r = 0, g = 0, b = 0, c = 0;
+            for (let i = 0; i < d.length; i += 4) { r += d[i]; g += d[i + 1]; b += d[i + 2]; c++; }
+            return { r: r / c, g: g / c, b: b / c };
+        }
+
+        // ===== Smoothed display state =====
+        let dispHR = 0, dispHRV = 0, dispQual = 0, dispSpO2 = 0, dispBreath = 0;
+        let dispRMSSD = 0, dispPNN50 = 0, dispLFHF = 0, dispMeanRR = 0;
+        let lastEmo = null;
+        const EMA = 0.15; // low = smoother (0-1)
+        function ema(prev, cur, alpha) { return prev === 0 ? cur : prev + alpha * (cur - prev); }
+
+        // ===== Analysis =====
+        let motionWarning = false;
+        function runAnalysis() {
+            if (gSig.length < 90) return;
+            const fps = estimateFPS(ts);
+
+            // Motion artifact detection — skip if moving too much
+            if (detectMotionArtifact(rSig, gSig, bSig, 10)) {
+                motionWarning = true;
+                setStatus('calibrating', '⚠️ 偵測到移動，請保持靜止');
+                return;
+            }
+            motionWarning = false;
+
+            // Fused POS+CHROM with ambient light compensation
+            const fused = fusedHeartRate(rSig, gSig, bSig, fps);
+            const hr = fused.hr;
+            const filtered = fused.filtered;
+            const quality = fused.quality;
+
+            // Signal quality gating — reject bad frames
+            if (!quality.usable) {
+                setStatus('calibrating', '📡 訊號品質不足，請調整光線或姿勢');
+                return;
+            }
+
+            if (hr > 40 && hr < 200) {
+                // Signal quality always displayed
+                dispQual = ema(dispQual, quality.score, EMA);
+                document.getElementById('qualVal').textContent = Math.round(dispQual);
+
+                // --- Quality Gate: only update metrics when signal is trustworthy ---
+                if (!window._goodFrames) window._goodFrames = 0;
+                const QUALITY_THRESHOLD = parseInt(document.getElementById('qualThreshold').value) || 70;
+                const MIN_GOOD_FRAMES = 5;
+
+                if (quality.score >= QUALITY_THRESHOLD) {
+                    window._goodFrames++;
+
+                    // HR (IQR + EMA smoothed)
+                    hrHist.push(hr); if (hrHist.length > 30) hrHist.shift();
+                    const cleanedHR = rejectOutliersIQR(hrHist);
+                    const avgHR = cleanedHR.length > 0 ? cleanedHR.reduce((a, b) => a + b) / cleanedHR.length : hr;
+                    dispHR = ema(dispHR, avgHR, EMA);
+                    const showHR = Math.round(dispHR);
+
+                    if (window._goodFrames >= MIN_GOOD_FRAMES) {
+                        document.getElementById('hrVal').textContent = showHR;
+                        document.getElementById('heartIcon').style.animationDuration = (60 / showHR) + 's';
+                    }
+
+                    allHR.push(showHR);
+                    hrTrend.push({ t: Date.now(), hr: showHR });
+                    if (hrTrend.length > 120) hrTrend.shift();
+                    playHeartbeat();
+                    updateStats();
+                    drawTrend();
+
+                    // R-R intervals from peaks
+                    const peaks = findPeaksAdaptive(filtered, fps);
+                    const rr = [];
+                    for (let i = 1; i < peaks.length; i++) {
+                        const interval = ((peaks[i] - peaks[i - 1]) / fps) * 1000;
+                        if (interval > 300 && interval < 2000) rr.push(interval);
+                    }
+
+                    if (rr.length >= 3) {
+                        const cleanedRR = rejectOutliersIQR(rr);
+                        const hrv = calculateHRVMetrics(cleanedRR.length >= 3 ? cleanedRR : rr);
+                        if (hrv && window._goodFrames >= MIN_GOOD_FRAMES) {
+                            dispHRV = ema(dispHRV, hrv.sdnn, EMA);
+                            dispRMSSD = ema(dispRMSSD, hrv.rmssd, EMA);
+                            dispPNN50 = ema(dispPNN50, hrv.pnn50, EMA);
+                            dispLFHF = ema(dispLFHF, hrv.lfHfRatio, EMA);
+                            dispMeanRR = ema(dispMeanRR, hrv.meanRR, EMA);
+                            document.getElementById('hrvVal').textContent = Math.round(dispHRV);
+                            document.getElementById('rmssdVal').textContent = Math.round(dispRMSSD);
+                            document.getElementById('pnn50Val').textContent = (Math.round(dispPNN50 * 10) / 10) + '%';
+                            document.getElementById('lfhfVal').textContent = Math.round(dispLFHF * 100) / 100;
+                            document.getElementById('meanRRVal').textContent = Math.round(dispMeanRR) + 'ms';
+
+                            if (!lastEmo || frameCount % 50 === 0) {
+                                const emo = analyzeEmotionalState({ sdnn: Math.round(dispHRV), rmssd: Math.round(dispRMSSD), pnn50: Math.round(dispPNN50 * 10) / 10, lfHfRatio: Math.round(dispLFHF * 100) / 100 }, showHR);
+                                lastEmo = emo;
+                                document.getElementById('emotionVal').textContent = emo.emoji;
+                                document.getElementById('emotionLabel').textContent = emo.state;
+                                document.getElementById('emotionVal').style.color = emo.color;
+                            }
+                        }
+                    }
+
+                    // SpO2 (quality-gated + smoothed)
+                    if (window._goodFrames >= MIN_GOOD_FRAMES) {
+                        const spo2 = estimateSpO2(rSig, bSig);
+                        if (spo2) { dispSpO2 = ema(dispSpO2, spo2, EMA); document.getElementById('spo2Val').textContent = Math.round(dispSpO2); allSpO2.push(Math.round(dispSpO2)); }
+                    }
+
+                    // Breathing rate (quality-gated + smoothed)
+                    if (window._goodFrames >= MIN_GOOD_FRAMES) {
+                        const breath = estimateBreathingRate(filtered, fps);
+                        if (breath) { dispBreath = ema(dispBreath, breath, EMA); document.getElementById('breathVal').textContent = Math.round(dispBreath); allBreath.push(Math.round(dispBreath)); }
+                    }
+
+                    // Stress detection update (every 10 frames)
+                    if (frameCount % 10 === 0 && stressMode) {
+                        updateStressDetection(dispHR, dispHRV, dispBreath);
+                    }
+
+                    // Pulse Harmonic Analysis (脈診) — quality-gated + accumulated smoothing
+                    if (frameCount % 50 === 0 && quality.score >= 40) {
+                        const harmonicData = pulseHarmonicAnalysis(filtered, fps);
+                        if (harmonicData) {
+                            if (!window._harmonicSamples) window._harmonicSamples = 0;
+                            window._harmonicSamples++;
+                            if (!window._smoothHarmonics) window._smoothHarmonics = new Array(11).fill(0);
+                            const alpha = window._harmonicSamples < 3 ? 0.5 : 0.08;
+                            harmonicData.harmonics.forEach((h, i) => {
+                                window._smoothHarmonics[i] = window._smoothHarmonics[i] === 0
+                                    ? h.percentage : ema(window._smoothHarmonics[i], h.percentage, alpha);
+                                h.percentage = window._smoothHarmonics[i];
+                            });
+                            if (window._harmonicSamples >= 3) {
+                                if (!window._lastConstitution || window._lastConstitution !== harmonicData.constitution) window._lastConstitution = harmonicData.constitution;
+                                harmonicData.constitution = window._lastConstitution;
+                                drawHarmonics(harmonicData);
+                            } else {
+                                drawEmptyChart(harmonicCanvas, harmonicCtx, `累積高品質數據... (${window._harmonicSamples}/3)`);
+                            }
+                        }
+                    }
+
+                    if (window._goodFrames < MIN_GOOD_FRAMES) {
+                        setStatus('calibrating', `📊 累積可信數據中... (${window._goodFrames}/${MIN_GOOD_FRAMES})`);
+                    } else {
+                        setStatus('active', `🎯 POS+CHROM 融合追蹤 · SNR ${quality.snr}dB · 品質 ${Math.round(quality.score)}%`);
+                    }
+                } else {
+                    // Quality too low — freeze all metrics at last known good values
+                    setStatus('calibrating', `⏳ 訊號品質偏低 (${Math.round(quality.score)}%)，數據暫停更新...`);
+                }
+            }
+        }
+
+        function calcQuality(sig, fps) {
+            if (sig.length < 30) return 0;
+            const mean = sig.reduce((a, b) => a + b) / sig.length;
+            const std = Math.sqrt(sig.reduce((s, v) => s + (v - mean) ** 2, 0) / sig.length);
+            let q = 0;
+            if (std > 0.005 && std < 10) q = Math.min(80, std * 150);
+            const peaks = findPeaksAdaptive(sig.slice(-90), fps);
+            if (peaks.length >= 2 && peaks.length <= 12) q = Math.min(99, q + 20);
+            return q;
+        }
+
+        // ===== Drawing =====
+        function drawOverlay(face, rois) {
+            faceCtx.clearRect(0, 0, faceCanvas.width, faceCanvas.height);
+            const sx = faceCanvas.width / samplingCanvas.width, sy = faceCanvas.height / samplingCanvas.height;
+
+            // Face box
+            faceCtx.strokeStyle = 'rgba(88,86,214,0.5)'; faceCtx.lineWidth = 2; faceCtx.setLineDash([6, 3]);
+            faceCtx.strokeRect(face.x * sx, face.y * sy, face.w * sx, face.h * sy);
+
+            // ROIs
+            const colors = ['rgba(48,209,88,0.8)', 'rgba(90,200,250,0.8)', 'rgba(255,159,10,0.8)'];
+            const labels = ['額頭', '左頰', '右頰'];
+            faceCtx.setLineDash([]);
+            rois.forEach((r, i) => {
+                faceCtx.strokeStyle = colors[i] || colors[0]; faceCtx.lineWidth = 2;
+                faceCtx.strokeRect(r.x * sx, r.y * sy, r.w * sx, r.h * sy);
+                faceCtx.fillStyle = colors[i].replace('0.8', '0.1');
+                faceCtx.fillRect(r.x * sx, r.y * sy, r.w * sx, r.h * sy);
+                faceCtx.font = '10px Inter'; faceCtx.fillStyle = colors[i];
+                faceCtx.fillText(labels[i], r.x * sx, (r.y - 3) * sy);
+            });
+
+            // Other faces
+            allFaceBoxes.slice(1).forEach(f => {
+                faceCtx.strokeStyle = 'rgba(255,45,85,0.4)'; faceCtx.lineWidth = 1; faceCtx.setLineDash([4, 4]);
+                faceCtx.strokeRect(f.x * sx, f.y * sy, f.w * sx, f.h * sy);
+            });
+        }
+
+        function drawEmptyChart(canvas, ctx, text) {
+            const w = canvas.width / devicePixelRatio, h = canvas.height / devicePixelRatio;
+            ctx.clearRect(0, 0, w, h);
+            ctx.fillStyle = 'rgba(26,26,46,0.5)'; ctx.fillRect(0, 0, w, h);
+            ctx.font = '12px Inter'; ctx.fillStyle = 'rgba(255,255,255,0.12)'; ctx.textAlign = 'center';
+            ctx.fillText(text, w / 2, h / 2);
+        }
+
+        function drawSignal() {
+            if (gSig.length < 2) return;
+            const w = signalCanvas.width / devicePixelRatio, h = signalCanvas.height / devicePixelRatio;
+            signalCtx.clearRect(0, 0, w, h);
+
+            const bg = signalCtx.createLinearGradient(0, 0, 0, h);
+            bg.addColorStop(0, 'rgba(26,26,46,0.4)'); bg.addColorStop(1, 'rgba(18,18,26,0.4)');
+            signalCtx.fillStyle = bg; signalCtx.fillRect(0, 0, w, h);
+
+            // Grid
+            signalCtx.strokeStyle = 'rgba(255,255,255,0.03)'; signalCtx.lineWidth = 1;
+            for (let i = 1; i < 5; i++) { const y = h / 5 * i; signalCtx.beginPath(); signalCtx.moveTo(0, y); signalCtx.lineTo(w, y); signalCtx.stroke(); }
+
+            // Use CHROM signal if enough data
+            let display;
+            if (gSig.length > 30) {
+                const fps = estimateFPS(ts);
+                const compensated = compensateAmbientLight(rSig, gSig, bSig);
+                const posSig = posAlgorithm(compensated.r, compensated.g, compensated.b, fps);
+                display = detrendSignal(posSig, 30);
+            } else {
+                display = detrendSignal(gSig, 30);
+            }
+            const max = Math.max(...display.map(Math.abs)) || 1;
+            const pad = 15;
+
+            // Signal line
+            signalCtx.beginPath(); signalCtx.strokeStyle = 'rgba(255,45,85,0.8)'; signalCtx.lineWidth = 1.5; signalCtx.lineJoin = 'round';
+            for (let i = 0; i < display.length; i++) {
+                const x = (i / (BUF - 1)) * w, y = h / 2 - display[i] / max * (h / 2 - pad);
+                i === 0 ? signalCtx.moveTo(x, y) : signalCtx.lineTo(x, y);
+            }
+            signalCtx.stroke();
+
+            // Glow
+            signalCtx.beginPath(); signalCtx.strokeStyle = 'rgba(255,45,85,0.12)'; signalCtx.lineWidth = 6; signalCtx.lineJoin = 'round';
+            for (let i = 0; i < display.length; i++) {
+                const x = (i / (BUF - 1)) * w, y = h / 2 - display[i] / max * (h / 2 - pad);
+                i === 0 ? signalCtx.moveTo(x, y) : signalCtx.lineTo(x, y);
+            }
+            signalCtx.stroke();
+        }
+
+        function drawTrend() {
+            if (hrTrend.length < 2) return;
+            const w = trendCanvas.width / devicePixelRatio, h = trendCanvas.height / devicePixelRatio;
+            trendCtx.clearRect(0, 0, w, h);
+
+            const bg = trendCtx.createLinearGradient(0, 0, 0, h);
+            bg.addColorStop(0, 'rgba(26,26,46,0.4)'); bg.addColorStop(1, 'rgba(18,18,26,0.4)');
+            trendCtx.fillStyle = bg; trendCtx.fillRect(0, 0, w, h);
+
+            const hrs = hrTrend.map(t => t.hr);
+            const min = Math.min(...hrs) - 5, max = Math.max(...hrs) + 5;
+            const range = max - min || 1;
+            const pad = 12;
+
+            // Fill area
+            trendCtx.beginPath();
+            hrTrend.forEach((p, i) => {
+                const x = (i / (hrTrend.length - 1)) * w;
+                const y = pad + (1 - (p.hr - min) / range) * (h - 2 * pad);
+                i === 0 ? trendCtx.moveTo(x, y) : trendCtx.lineTo(x, y);
+            });
+            trendCtx.lineTo(w, h); trendCtx.lineTo(0, h); trendCtx.closePath();
+            const fg = trendCtx.createLinearGradient(0, 0, 0, h);
+            fg.addColorStop(0, 'rgba(255,45,85,0.15)'); fg.addColorStop(1, 'rgba(255,45,85,0)');
+            trendCtx.fillStyle = fg; trendCtx.fill();
+
+            // Line
+            trendCtx.beginPath(); trendCtx.strokeStyle = 'rgba(255,45,85,0.7)'; trendCtx.lineWidth = 1.5; trendCtx.lineJoin = 'round';
+            hrTrend.forEach((p, i) => {
+                const x = (i / (hrTrend.length - 1)) * w;
+                const y = pad + (1 - (p.hr - min) / range) * (h - 2 * pad);
+                i === 0 ? trendCtx.moveTo(x, y) : trendCtx.lineTo(x, y);
+            });
+            trendCtx.stroke();
+
+            // Labels
+            trendCtx.font = '10px JetBrains Mono'; trendCtx.fillStyle = 'rgba(255,255,255,0.3)'; trendCtx.textAlign = 'right';
+            trendCtx.fillText(Math.round(max) + ' BPM', w - 4, pad + 8);
+            trendCtx.fillText(Math.round(min) + ' BPM', w - 4, h - 4);
+        }
+
+        // ===== Harmonic Bar Chart =====
+        function drawHarmonics(data) {
+            if (!data || !data.harmonics) return;
+            const w = harmonicCanvas.width / devicePixelRatio, h = harmonicCanvas.height / devicePixelRatio;
+            harmonicCtx.clearRect(0, 0, w, h);
+
+            const bg = harmonicCtx.createLinearGradient(0, 0, 0, h);
+            bg.addColorStop(0, 'rgba(26,26,46,0.4)'); bg.addColorStop(1, 'rgba(18,18,26,0.4)');
+            harmonicCtx.fillStyle = bg; harmonicCtx.fillRect(0, 0, w, h);
+
+            const bars = data.harmonics;
+            const maxPct = Math.max(...bars.map(b => b.percentage), 1);
+            const barCount = bars.length;
+            const gap = 4;
+            const barW = (w - 40 - gap * (barCount + 1)) / barCount;
+            const padTop = 14, padBot = 28;
+
+            bars.forEach((b, i) => {
+                const x = 20 + gap + i * (barW + gap);
+                const barH = ((b.percentage / maxPct) * (h - padTop - padBot));
+                const y = h - padBot - barH;
+
+                // Bar with gradient
+                const grad = harmonicCtx.createLinearGradient(x, y, x, h - padBot);
+                grad.addColorStop(0, b.color); grad.addColorStop(1, b.color + '44');
+                harmonicCtx.fillStyle = grad;
+                harmonicCtx.beginPath();
+                harmonicCtx.roundRect(x, y, barW, barH, [3, 3, 0, 0]);
+                harmonicCtx.fill();
+
+                // Percentage label
+                harmonicCtx.font = '9px JetBrains Mono';
+                harmonicCtx.fillStyle = 'rgba(255,255,255,0.8)';
+                harmonicCtx.textAlign = 'center';
+                harmonicCtx.fillText(Math.round(b.percentage) + '%', x + barW / 2, y - 3);
+
+                // Organ name
+                harmonicCtx.font = '9px Inter';
+                harmonicCtx.fillStyle = 'rgba(255,255,255,0.5)';
+                harmonicCtx.fillText(b.name, x + barW / 2, h - padBot + 12);
+
+                // Harmonic label
+                harmonicCtx.font = '7px JetBrains Mono';
+                harmonicCtx.fillStyle = 'rgba(255,255,255,0.25)';
+                harmonicCtx.fillText('C' + b.harmonic, x + barW / 2, h - padBot + 22);
+            });
+
+            // Update detail grid
+            const detail = document.getElementById('harmonicDetail');
+            detail.innerHTML = bars.slice(0, 7).map(b =>
+                `<div style="text-align:center;padding:4px;background:${b.color}15;border-radius:6px;border:1px solid ${b.color}33">
+                    <div>${b.emoji} ${b.name}</div>
+                    <div style="font-weight:700;color:${b.color}">${Math.round(b.percentage)}%</div>
+                    <div style="color:${b.statusColor};font-size:0.55rem">${b.status}</div>
+                    <div style="color:rgba(255,255,255,0.3);font-size:0.5rem">參考 ${b.expectedRange || ''}</div>
+                </div>`
+            ).join('');
+
+            // Constitution badge
+            document.getElementById('constitutionBadge').textContent = data.constitutionEmoji + ' ' + data.constitution;
+        }
+
+        // ===== Helpers =====
+        function setStatus(type, text) {
+            const bar = document.getElementById('statusBar');
+            bar.className = 'status-bar ' + (type === 'active' ? 'active' : type === 'calibrating' ? 'calibrating' : '');
+            document.getElementById('statusText').textContent = text;
+        }
+        function updateDuration() {
+            if (!startTime) return;
+            const s = Math.floor((Date.now() - startTime) / 1000);
+            document.getElementById('duration').textContent = String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+        }
+        function updateStats() {
+            if (!allHR.length) return;
+            const avg = Math.round(allHR.reduce((a, b) => a + b) / allHR.length);
+            document.getElementById('avgHR').textContent = avg + ' BPM';
+            document.getElementById('maxHR').textContent = Math.max(...allHR) + ' BPM';
+            document.getElementById('minHR').textContent = Math.min(...allHR) + ' BPM';
+            if (allSpO2.length) document.getElementById('avgSpO2').textContent = Math.round(allSpO2.reduce((a, b) => a + b) / allSpO2.length) + '%';
+            if (allBreath.length) document.getElementById('avgBreath').textContent = Math.round(allBreath.reduce((a, b) => a + b) / allBreath.length) + ' 次/分';
+        }
+
+        // ===== Export =====
+        function exportReport() {
+            if (!allHR.length) { alert('請先測量數據再匯出報告'); return; }
+            const now = new Date();
+            const elapsed = startTime ? Math.floor((Date.now() - startTime) / 1000) : 0;
+            const avgHR = Math.round(allHR.reduce((a, b) => a + b) / allHR.length);
+            const avgSp = allSpO2.length ? Math.round(allSpO2.reduce((a, b) => a + b) / allSpO2.length) : 'N/A';
+            const avgBr = allBreath.length ? Math.round(allBreath.reduce((a, b) => a + b) / allBreath.length) : 'N/A';
+
+            const report = `
+════════════════════════════════════════
+   💓 rPPG Pro 心率監測報告
+════════════════════════════════════════
+📅 日期: ${now.toLocaleDateString('zh-TW')} ${now.toLocaleTimeString('zh-TW')}
+⏱️ 測量時長: ${Math.floor(elapsed / 60)}分${elapsed % 60}秒
+
+━━━━ 基本數據 ━━━━
+❤️ 平均心率: ${avgHR} BPM
+📈 最高心率: ${Math.max(...allHR)} BPM
+📉 最低心率: ${Math.min(...allHR)} BPM
+🩸 平均血氧: ${avgSp}%
+🫁 平均呼吸率: ${avgBr} 次/分
+
+━━━━ HRV 詳細 ━━━━
+SDNN: ${document.getElementById('hrvVal').textContent} ms
+RMSSD: ${document.getElementById('rmssdVal').textContent} ms
+pNN50: ${document.getElementById('pnn50Val').textContent}
+LF/HF: ${document.getElementById('lfhfVal').textContent}
+
+━━━━ 情緒分析 ━━━━
+${document.getElementById('emotionVal').textContent} ${document.getElementById('emotionLabel').textContent}
+
+━━━━ 心率趨勢 ━━━━
+${hrTrend.slice(-20).map(t => {
+                const d = new Date(t.t);
+                return d.toLocaleTimeString('zh-TW') + ' → ' + t.hr + ' BPM';
+            }).join('\n')}
+
+════════════════════════════════════════
+⚠️ 此報告基於影像分析估算，僅供參考，不可作為醫療診斷依據。
+════════════════════════════════════════
+`;
+            const blob = new Blob([report], { type: 'text/plain;charset=utf-8' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `rPPG_Report_${now.toISOString().slice(0, 10)}.txt`;
+            a.click(); URL.revokeObjectURL(a.href);
+        }
+
+        // ===== Section Reorder =====
+        function moveSection(btn, direction) {
+            const section = btn.closest('.sortable-section');
+            const container = section.parentElement;
+            const sections = Array.from(container.querySelectorAll('.sortable-section'));
+            const idx = sections.indexOf(section);
+
+            if (direction === -1 && idx > 0) {
+                container.insertBefore(section, sections[idx - 1]);
+            } else if (direction === 1 && idx < sections.length - 1) {
+                container.insertBefore(sections[idx + 1], section);
+            }
+
+            // Flash animation
+            section.style.transition = 'transform 0.15s';
+            section.style.transform = 'scale(1.01)';
+            setTimeout(() => { section.style.transform = ''; }, 200);
+
+            saveSectionOrder();
+        }
+
+        function saveSectionOrder() {
+            const container = document.getElementById('sortableContainer');
+            if (!container) return;
+            const order = Array.from(container.querySelectorAll('.sortable-section'))
+                .map(s => s.dataset.section);
+            localStorage.setItem('rppg_section_order', JSON.stringify(order));
+        }
+
+        function applySectionOrder() {
+            const saved = localStorage.getItem('rppg_section_order');
+            if (!saved) return;
+            try {
+                const order = JSON.parse(saved);
+                const container = document.getElementById('sortableContainer');
+                if (!container) return;
+                order.forEach(id => {
+                    const section = container.querySelector(`[data-section="${id}"]`);
+                    if (section) container.appendChild(section);
+                });
+            } catch (e) { }
+        }
+
+        // ===== Stress Detection Engine =====
+        let stressMode = false;
+        let stressPhaseState = 'idle'; // idle, baseline, active
+        let stressBaseline = { hr: [], hrv: [], breath: [] };
+        let stressBaselineAvg = { hr: 0, hrv: 0, breath: 0 };
+        let stressStartTime = 0;
+        const BASELINE_DURATION = 30; // seconds
+
+        function toggleStressMode() {
+            if (!isRunning) {
+                alert('請先啟動攝影機偵測！');
+                return;
+            }
+            const btn = document.getElementById('stressBtn');
+            const panel = document.getElementById('stressPanel');
+
+            if (stressMode) {
+                // Stop stress mode
+                stressMode = false;
+                stressPhaseState = 'idle';
+                btn.innerHTML = '▶️ 啟動';
+                btn.style.background = 'rgba(255,149,0,0.2)';
+                btn.style.color = '#ff9500';
+                panel.style.display = 'none';
+            } else {
+                // Start baseline recording
+                stressMode = true;
+                stressPhaseState = 'baseline';
+                stressBaseline = { hr: [], hrv: [], breath: [] };
+                stressStartTime = Date.now();
+                btn.innerHTML = '⏹ 停止';
+                btn.style.background = 'rgba(255,45,85,0.2)';
+                btn.style.color = '#ff2d55';
+                panel.style.display = 'block';
+                document.getElementById('stressProgress').style.display = 'block';
+                document.getElementById('stressVerdict').style.display = 'none';
+                document.getElementById('stressPhase').innerHTML = '📏 <b>Phase 1：建立基線</b><br>請保持放鬆，正常呼吸 30 秒...';
+                document.getElementById('stressScore').textContent = '0';
+                document.getElementById('stressGauge').style.width = '0%';
+                document.getElementById('stressHR').textContent = '--';
+                document.getElementById('stressHRV').textContent = '--';
+                document.getElementById('stressBreath').textContent = '--';
+            }
+        }
+
+        function updateStressDetection(currentHR, currentHRV, currentBreath) {
+            if (!stressMode) return;
+
+            const elapsed = (Date.now() - stressStartTime) / 1000;
+
+            if (stressPhaseState === 'baseline') {
+                // Collecting baseline data
+                if (currentHR > 0) stressBaseline.hr.push(currentHR);
+                if (currentHRV > 0) stressBaseline.hrv.push(currentHRV);
+                if (currentBreath > 0) stressBaseline.breath.push(currentBreath);
+
+                const progress = Math.min(100, (elapsed / BASELINE_DURATION) * 100);
+                document.getElementById('stressProgressBar').style.width = progress + '%';
+
+                if (elapsed >= BASELINE_DURATION && stressBaseline.hr.length >= 5) {
+                    // Baseline complete — calculate averages
+                    const avg = arr => arr.length ? arr.reduce((a, b) => a + b) / arr.length : 0;
+                    stressBaselineAvg.hr = avg(stressBaseline.hr);
+                    stressBaselineAvg.hrv = avg(stressBaseline.hrv);
+                    stressBaselineAvg.breath = avg(stressBaseline.breath);
+
+                    stressPhaseState = 'active';
+                    document.getElementById('stressProgress').style.display = 'none';
+                    document.getElementById('stressPhase').innerHTML = `🎯 <b>Phase 2：提問模式</b><br>基線 — HR: ${Math.round(stressBaselineAvg.hr)} · HRV: ${Math.round(stressBaselineAvg.hrv)} · 呼吸: ${Math.round(stressBaselineAvg.breath)}`;
+
+                    // Vibrate on mobile to signal readiness
+                    if (navigator.vibrate) navigator.vibrate(200);
+                }
+            } else if (stressPhaseState === 'active') {
+                // Real-time stress comparison
+                const hrChange = stressBaselineAvg.hr > 0
+                    ? ((currentHR - stressBaselineAvg.hr) / stressBaselineAvg.hr) * 100 : 0;
+                const hrvChange = stressBaselineAvg.hrv > 0
+                    ? ((stressBaselineAvg.hrv - currentHRV) / stressBaselineAvg.hrv) * 100 : 0;
+                const breathChange = stressBaselineAvg.breath > 0
+                    ? ((currentBreath - stressBaselineAvg.breath) / stressBaselineAvg.breath) * 100 : 0;
+
+                // Stress scoring: weighted sum, clamp 0-100
+                // HR spike: 40% weight, HRV drop: 35% weight, Breath change: 25% weight
+                const hrScore = Math.max(0, Math.min(100, hrChange * 5));      // +20% HR → 100
+                const hrvScore = Math.max(0, Math.min(100, hrvChange * 3.3));   // +30% HRV drop → 100
+                const breathScore = Math.max(0, Math.min(100, Math.abs(breathChange) * 4)); // ±25% → 100
+
+                const totalScore = Math.round(hrScore * 0.4 + hrvScore * 0.35 + breathScore * 0.25);
+                const clampedScore = Math.max(0, Math.min(100, totalScore));
+
+                // Update UI
+                document.getElementById('stressScore').textContent = clampedScore;
+                document.getElementById('stressGauge').style.width = clampedScore + '%';
+
+                // Color the score
+                const scoreEl = document.getElementById('stressScore');
+                if (clampedScore < 30) {
+                    scoreEl.style.color = '#34c759';
+                } else if (clampedScore < 60) {
+                    scoreEl.style.color = '#ff9500';
+                } else {
+                    scoreEl.style.color = '#ff2d55';
+                }
+
+                // Per-indicator display
+                const hrSign = hrChange >= 0 ? '+' : '';
+                document.getElementById('stressHR').textContent = `${hrSign}${Math.round(hrChange)}%`;
+                document.getElementById('stressHR').style.color = hrChange > 10 ? '#ff2d55' : hrChange > 5 ? '#ff9500' : '#34c759';
+
+                const hrvSign = hrvChange >= 0 ? '-' : '+';
+                document.getElementById('stressHRV').textContent = `${hrvSign}${Math.abs(Math.round(hrvChange))}%`;
+                document.getElementById('stressHRV').style.color = hrvChange > 15 ? '#ff2d55' : hrvChange > 8 ? '#ff9500' : '#34c759';
+
+                document.getElementById('stressBreath').textContent = `${breathChange >= 0 ? '+' : ''}${Math.round(breathChange)}%`;
+                document.getElementById('stressBreath').style.color = Math.abs(breathChange) > 20 ? '#ff2d55' : Math.abs(breathChange) > 10 ? '#ff9500' : '#34c759';
+
+                // Verdict
+                const verdict = document.getElementById('stressVerdict');
+                verdict.style.display = 'block';
+                if (clampedScore < 20) {
+                    verdict.textContent = '😌 非常放鬆 — 未偵測到壓力反應';
+                    verdict.style.background = 'rgba(52,199,89,0.12)';
+                    verdict.style.color = '#34c759';
+                } else if (clampedScore < 40) {
+                    verdict.textContent = '🙂 輕微波動 — 正常範圍內';
+                    verdict.style.background = 'rgba(52,199,89,0.08)';
+                    verdict.style.color = '#30d158';
+                } else if (clampedScore < 60) {
+                    verdict.textContent = '😐 中等壓力 — 偵測到生理反應';
+                    verdict.style.background = 'rgba(255,149,0,0.12)';
+                    verdict.style.color = '#ff9500';
+                } else if (clampedScore < 80) {
+                    verdict.textContent = '😰 明顯壓力 — 多項指標異常';
+                    verdict.style.background = 'rgba(255,149,0,0.15)';
+                    verdict.style.color = '#ff9500';
+                } else {
+                    verdict.textContent = '🚨 高度緊張 — 強烈生理壓力反應';
+                    verdict.style.background = 'rgba(255,45,85,0.15)';
+                    verdict.style.color = '#ff2d55';
+                }
+            }
+        }
+
+        // ===== History UI =====
+        async function loadHistoryUI() {
+            const container = document.getElementById('historyTable');
+            const sessions = await getSessions(50);
+            if (!sessions || sessions.length === 0) {
+                container.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:20px;font-size:0.75rem">尚無記錄。開始偵測並停止後會自動儲存。</div>';
+                return;
+            }
+            let html = `<table style="width:100%;border-collapse:collapse;font-size:0.65rem">
+                <thead><tr style="color:var(--text-secondary);border-bottom:1px solid var(--border-color)">
+                    <th style="padding:6px;text-align:left">日期</th>
+                    <th style="padding:6px">時長</th>
+                    <th style="padding:6px">❤️ HR</th>
+                    <th style="padding:6px">📊 HRV</th>
+                    <th style="padding:6px">🫁 SpO2</th>
+                    <th style="padding:6px">☯️ 體質</th>
+                    <th style="padding:6px">🎭</th>
+                    <th style="padding:6px"></th>
+                </tr></thead><tbody>`;
+            sessions.forEach(s => {
+                const ts = s.timestamp || '';
+                const date = ts.slice(0, 10);
+                const time = ts.slice(11, 16);
+                html += `<tr style="border-bottom:1px solid rgba(255,255,255,0.05)">
+                    <td style="padding:5px;white-space:nowrap">${date}<br><span style="color:var(--text-secondary)">${time}</span></td>
+                    <td style="padding:5px;text-align:center">${formatDuration(s.duration || 0)}</td>
+                    <td style="padding:5px;text-align:center;color:#ff2d55;font-weight:600">${s.avg_hr ? Math.round(s.avg_hr) : '--'}</td>
+                    <td style="padding:5px;text-align:center">${s.avg_hrv ? Math.round(s.avg_hrv) : '--'}</td>
+                    <td style="padding:5px;text-align:center">${s.avg_spo2 ? Math.round(s.avg_spo2) + '%' : '--'}</td>
+                    <td style="padding:5px;text-align:center;font-size:0.6rem">${s.constitution || '--'}</td>
+                    <td style="padding:5px;text-align:center">${s.emotion || '--'}</td>
+                    <td style="padding:5px;text-align:center">
+                        <button onclick="deleteSession('${s.id}').then(()=>loadHistoryUI())"
+                            style="background:none;border:none;color:#ff2d55;cursor:pointer;font-size:0.7rem" title="刪除">✕</button>
+                    </td>
+                </tr>`;
+            });
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        // ===== User Management =====
+        async function loadUsersUI() {
+            const select = document.getElementById('userSelect');
+            const users = await getUsers();
+            const current = getCurrentUser();
+            select.innerHTML = '';
+            // Always have default
+            if (!users.find(u => u.username === 'default')) {
+                select.innerHTML += '<option value="default">訪客</option>';
+            }
+            users.forEach(u => {
+                const selected = u.username === current ? 'selected' : '';
+                const name = u.display_name || u.username;
+                select.innerHTML += `<option value="${u.username}" ${selected}>${name}</option>`;
+            });
+        }
+
+        function switchUser(username) {
+            setCurrentUser(username);
+            loadHistoryUI();
+        }
+
+        function toggleAddUser() {
+            const btn = document.getElementById('addUserBtn');
+            const input = document.getElementById('addUserInput');
+            if (input.style.display === 'flex') {
+                input.style.display = 'none';
+                btn.style.display = '';
+            } else {
+                input.style.display = 'flex';
+                btn.style.display = 'none';
+                document.getElementById('newUserName').value = '';
+                document.getElementById('newUserName').focus();
+            }
+        }
+
+        async function confirmAddUser() {
+            const nameInput = document.getElementById('newUserName');
+            const name = nameInput.value.trim();
+            if (!name) { nameInput.focus(); return; }
+            const username = name.toLowerCase().replace(/\s+/g, '_');
+            const result = await createUser(username, name);
+            if (result) {
+                setCurrentUser(username);
+                await loadUsersUI();
+                loadHistoryUI();
+            }
+            toggleAddUser();
+        }
+
+        // ===== PWA Service Worker =====
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js')
+                .then(reg => console.log('✅ SW registered:', reg.scope))
+                .catch(err => console.warn('SW failed:', err));
+        }
+
+        window.addEventListener('DOMContentLoaded', init);
+        window.addEventListener('DOMContentLoaded', () => {
+            applySectionOrder();
+            setTimeout(loadUsersUI, 300);
+            setTimeout(loadHistoryUI, 500);
+        });
+    </script>
+</body>
+
+</html>
