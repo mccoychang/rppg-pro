@@ -1,5 +1,5 @@
 // ===== rPPG Pro — Service Worker =====
-const CACHE_NAME = 'rppg-pro-v1';
+const CACHE_NAME = 'rppg-pro-v2';
 const ASSETS = [
     '/',
     '/index.html',
