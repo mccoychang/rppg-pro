@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-TW" data-lang="dual">
 
 <head>
     <meta charset="UTF-8">
@@ -731,10 +731,13 @@
     <div class="app">
         <div class="header">
             <div class="header-left">
-                <h1><span class="heartbeat-icon" id="heartIcon">💓</span> rPPG Pro 心率監測器</h1>
-                <p>POS+CHROM 融合 · Welch FFT · 多區域 ROI · 品質門控</p>
+                <h1><span class="heartbeat-icon" id="heartIcon">💓</span> rPPG Pro <span data-i18n="心率監測器">心率監測器</span>
+                </h1>
+                <p><span data-i18n="POS+CHROM 融合 · Welch FFT · 多區域 ROI · 品質門控">POS+CHROM 融合 · Welch FFT · 多區域 ROI ·
+                        品質門控</span></p>
             </div>
             <div class="header-right">
+                <button class="icon-btn" onclick="toggleLang()" title="Language / 語言" id="langBtn">🌐</button>
                 <button class="icon-btn" onclick="toggleTheme()" title="切換主題" id="themeBtn">🌙</button>
                 <button class="icon-btn" onclick="toggleSound()" title="心跳音效" id="soundBtn">🔇</button>
                 <button class="icon-btn" onclick="exportReport()" title="匯出報告">📄</button>
@@ -744,17 +747,17 @@
         <!-- User Account Bar -->
         <div
             style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--bg-secondary);border-radius:10px;margin-bottom:12px;border:1px solid var(--border-color)">
-            <span style="font-size:0.75rem;color:var(--text-secondary)">👤 使用者</span>
+            <span style="font-size:0.75rem;color:var(--text-secondary)">👤 <span data-i18n="使用者">使用者</span></span>
             <select id="userSelect" onchange="switchUser(this.value)"
                 style="flex:1;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border-color);border-radius:6px;padding:5px 8px;font-size:0.7rem;font-family:inherit">
-                <option value="default">訪客</option>
+                <option value="default" data-i18n="訪客">訪客</option>
             </select>
             <button onclick="toggleAddUser()" id="addUserBtn"
                 style="background:rgba(52,199,89,0.2);color:#34c759;border:1px solid rgba(52,199,89,0.3);padding:4px 10px;border-radius:6px;font-size:0.65rem;cursor:pointer;white-space:nowrap">
-                ＋ 新增
+                ＋ <span data-i18n="新增">新增</span>
             </button>
             <div id="addUserInput" style="display:none;display:none;align-items:center;gap:4px">
-                <input type="text" id="newUserName" placeholder="輸入名稱"
+                <input type="text" id="newUserName" placeholder="輸入名稱" data-i18n-placeholder="輸入名稱"
                     style="width:80px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border-color);border-radius:6px;padding:4px 6px;font-size:0.65rem;font-family:inherit"
                     onkeydown="if(event.key==='Enter')confirmAddUser()">
                 <button onclick="confirmAddUser()"
@@ -767,35 +770,37 @@
         <div class="grid-main">
             <!-- Left: Video -->
             <div class="card">
-                <div class="card-title">📹 即時影像 <span class="person-badge" id="personBadge" style="display:none">👤
-                        <span id="personCount">1</span> 人</span></div>
+                <div class="card-title">📹 <span data-i18n="即時影像">即時影像</span> <span class="person-badge"
+                        id="personBadge" style="display:none">👤
+                        <span id="personCount">1</span> <span data-i18n="人">人</span></span></div>
                 <div class="video-wrap" id="videoWrap">
                     <video id="webcam" autoplay playsinline muted></video>
                     <canvas id="faceCanvas"></canvas>
                     <div class="vid-overlay" id="vidOverlay" style="display:none">
-                        <div class="rec-dot"></div><span>偵測中</span>
+                        <div class="rec-dot"></div><span data-i18n="偵測中">偵測中</span>
                     </div>
                     <div class="vid-placeholder" id="vidPlaceholder">
                         <div class="cam-icon">📷</div>
-                        <p>點擊下方按鈕開啟攝影機</p>
+                        <p data-i18n="點擊下方按鈕開啟攝影機">點擊下方按鈕開啟攝影機</p>
                     </div>
                 </div>
                 <div class="cal-bar" id="calBar">
                     <div class="fill" id="calFill"></div>
                 </div>
                 <div class="status-bar" id="statusBar">
-                    <div class="status-dot"></div><span id="statusText">等待啟動...</span>
+                    <div class="status-dot"></div><span id="statusText" data-i18n="等待啟動...">等待啟動...</span>
                 </div>
                 <select class="cam-select" id="camSelect">
-                    <option value="">📷 選擇鏡頭（預設）</option>
+                    <option value="" data-i18n="選擇鏡頭（預設）">📷 選擇鏡頭（預設）</option>
                 </select>
                 <div class="threshold-wrap">
-                    <label>🔒 品質門檻</label>
+                    <label>🔒 <span data-i18n="品質門檻">品質門檻</span></label>
                     <input type="range" id="qualThreshold" min="10" max="95" value="70"
                         oninput="document.getElementById('threshVal').textContent=this.value+'%'">
                     <span class="val" id="threshVal">70%</span>
                 </div>
-                <button class="btn start" id="startBtn" onclick="toggleMonitoring()">🚀 開始偵測</button>
+                <button class="btn start" id="startBtn" onclick="toggleMonitoring()">🚀 <span
+                        data-i18n="開始偵測">開始偵測</span></button>
             </div>
 
             <!-- Right: Sortable Sections -->
@@ -803,48 +808,48 @@
                 <div class="sortable-section" data-section="metrics">
                     <div class="card">
                         <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
-                            <span>📊 即時數據</span>
+                            <span>📊 <span data-i18n="即時數據">即時數據</span></span>
                             <div class="reorder-btns">
-                                <button onclick="moveSection(this,-1)" title="上移">▲</button>
-                                <button onclick="moveSection(this,1)" title="下移">▼</button>
+                                <button onclick="moveSection(this,-1)" title="上移 / Move Up">▲</button>
+                                <button onclick="moveSection(this,1)" title="下移 / Move Down">▼</button>
                             </div>
                         </div>
                         <div class="grid-metrics">
                             <div class="m-card hr">
-                                <div class="m-label">心率</div>
+                                <div class="m-label" data-i18n="心率">心率</div>
                                 <div class="m-val" id="hrVal">--</div>
                                 <div class="m-unit">BPM</div>
-                                <div class="m-ref">正常 60-100</div>
+                                <div class="m-ref" data-i18n="正常 60-100">正常 60-100</div>
                             </div>
                             <div class="m-card hrv">
                                 <div class="m-label">HRV (SDNN)</div>
                                 <div class="m-val" id="hrvVal">--</div>
                                 <div class="m-unit">ms</div>
-                                <div class="m-ref">正常 50-100</div>
+                                <div class="m-ref" data-i18n="正常 50-100">正常 50-100</div>
                             </div>
                             <div class="m-card quality">
-                                <div class="m-label">訊號品質</div>
+                                <div class="m-label" data-i18n="訊號品質">訊號品質</div>
                                 <div class="m-val" id="qualVal">--</div>
                                 <div class="m-unit">%</div>
-                                <div class="m-ref">良好 >70%</div>
+                                <div class="m-ref" data-i18n="良好 >70%">良好 >70%</div>
                             </div>
                             <div class="m-card spo2">
-                                <div class="m-label">血氧 SpO2</div>
+                                <div class="m-label" data-i18n="血氧 SpO2">血氧 SpO2</div>
                                 <div class="m-val" id="spo2Val">--</div>
                                 <div class="m-unit">%</div>
-                                <div class="m-ref">正常 95-100</div>
+                                <div class="m-ref" data-i18n="正常 95-100">正常 95-100</div>
                             </div>
                             <div class="m-card breath">
-                                <div class="m-label">呼吸頻率</div>
+                                <div class="m-label" data-i18n="呼吸頻率">呼吸頻率</div>
                                 <div class="m-val" id="breathVal">--</div>
-                                <div class="m-unit">次/分</div>
-                                <div class="m-ref">正常 12-20</div>
+                                <div class="m-unit" data-i18n="次/分">次/分</div>
+                                <div class="m-ref" data-i18n="正常 12-20">正常 12-20</div>
                             </div>
                             <div class="m-card emotion">
-                                <div class="m-label">情緒狀態</div>
+                                <div class="m-label" data-i18n="情緒狀態">情緒狀態</div>
                                 <div class="m-val" id="emotionVal">--</div>
                                 <div class="m-unit" id="emotionLabel"></div>
-                                <div class="m-ref">😊放鬆 → 😰緊張</div>
+                                <div class="m-ref" data-i18n="😊放鬆 → 😰緊張">😊放鬆 → 😰緊張</div>
                             </div>
                         </div>
                     </div>
@@ -853,7 +858,7 @@
                 <div class="sortable-section" data-section="hrv">
                     <div class="card">
                         <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
-                            <span>💜 HRV 詳細指標</span>
+                            <span>💜 <span data-i18n="HRV 詳細指標">HRV 詳細指標</span></span>
                             <div class="reorder-btns">
                                 <button onclick="moveSection(this,-1)" title="上移">▲</button>
                                 <button onclick="moveSection(this,1)" title="下移">▼</button>
@@ -863,22 +868,22 @@
                             <div class="hrv-item">
                                 <div class="hrv-label">RMSSD</div>
                                 <div class="hrv-val" id="rmssdVal">--</div>
-                                <div class="hrv-ref">正常 20-50ms</div>
+                                <div class="hrv-ref" data-i18n="正常 20-50ms">正常 20-50ms</div>
                             </div>
                             <div class="hrv-item">
                                 <div class="hrv-label">pNN50</div>
                                 <div class="hrv-val" id="pnn50Val">--%</div>
-                                <div class="hrv-ref">正常 >3%</div>
+                                <div class="hrv-ref" data-i18n="正常 >3%">正常 >3%</div>
                             </div>
                             <div class="hrv-item">
                                 <div class="hrv-label">LF/HF</div>
                                 <div class="hrv-val" id="lfhfVal">--</div>
-                                <div class="hrv-ref">平衡 0.5-2.0</div>
+                                <div class="hrv-ref" data-i18n="平衡 0.5-2.0">平衡 0.5-2.0</div>
                             </div>
                             <div class="hrv-item">
                                 <div class="hrv-label">Mean RR</div>
                                 <div class="hrv-val" id="meanRRVal">--ms</div>
-                                <div class="hrv-ref">正常 600-1000ms</div>
+                                <div class="hrv-ref" data-i18n="正常 600-1000ms">正常 600-1000ms</div>
                             </div>
                         </div>
                     </div>
@@ -887,7 +892,7 @@
                 <div class="sortable-section" data-section="signal">
                     <div class="card">
                         <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
-                            <span>〰️ PPG 訊號 (POS+CHROM Fusion)</span>
+                            <span>〰️ <span data-i18n="PPG 訊號">PPG 訊號</span> (POS+CHROM Fusion)</span>
                             <div class="reorder-btns">
                                 <button onclick="moveSection(this,-1)" title="上移">▲</button>
                                 <button onclick="moveSection(this,1)" title="下移">▼</button>
@@ -900,7 +905,7 @@
                 <div class="sortable-section" data-section="trend">
                     <div class="card">
                         <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
-                            <span>📈 心率趨勢</span>
+                            <span>📈 <span data-i18n="心率趨勢">心率趨勢</span></span>
                             <div class="reorder-btns">
                                 <button onclick="moveSection(this,-1)" title="上移">▲</button>
                                 <button onclick="moveSection(this,1)" title="下移">▼</button>
@@ -913,7 +918,7 @@
                 <div class="sortable-section" data-section="harmonics">
                     <div class="card">
                         <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
-                            <span>☯️ 脈診分析（王唯工諧波）<span id="constitutionBadge"
+                            <span>☯️ <span data-i18n="脈診分析（王唯工諧波）">脈診分析（王唯工諧波）</span><span id="constitutionBadge"
                                     style="font-size:0.75rem;opacity:0.8;margin-left:8px"></span></span>
                             <div class="reorder-btns">
                                 <button onclick="moveSection(this,-1)" title="上移">▲</button>
@@ -932,27 +937,27 @@
         <!-- Bottom Stats -->
         <div class="grid-bottom">
             <div class="s-card">
-                <div class="s-label">測量時長</div>
+                <div class="s-label" data-i18n="測量時長">測量時長</div>
                 <div class="s-val" id="duration">00:00</div>
             </div>
             <div class="s-card">
-                <div class="s-label">平均心率</div>
+                <div class="s-label" data-i18n="平均心率">平均心率</div>
                 <div class="s-val" id="avgHR">--</div>
             </div>
             <div class="s-card">
-                <div class="s-label">最高心率</div>
+                <div class="s-label" data-i18n="最高心率">最高心率</div>
                 <div class="s-val" id="maxHR">--</div>
             </div>
             <div class="s-card">
-                <div class="s-label">最低心率</div>
+                <div class="s-label" data-i18n="最低心率">最低心率</div>
                 <div class="s-val" id="minHR">--</div>
             </div>
             <div class="s-card">
-                <div class="s-label">平均血氧</div>
+                <div class="s-label" data-i18n="平均血氧">平均血氧</div>
                 <div class="s-val" id="avgSpO2">--</div>
             </div>
             <div class="s-card">
-                <div class="s-label">平均呼吸率</div>
+                <div class="s-label" data-i18n="平均呼吸率">平均呼吸率</div>
                 <div class="s-val" id="avgBreath">--</div>
             </div>
         </div>
@@ -960,11 +965,11 @@
         <!-- Stress Detection (Lie Detector) -->
         <div class="card" style="margin-top:16px" id="stressCard">
             <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
-                <span>🔍 壓力偵測模式</span>
+                <span>🔍 <span data-i18n="壓力偵測模式">壓力偵測模式</span></span>
                 <div style="display:flex;gap:6px">
                     <button id="stressBtn" onclick="toggleStressMode()"
                         style="background:rgba(255,149,0,0.2);color:#ff9500;border:1px solid rgba(255,149,0,0.3);padding:4px 12px;border-radius:6px;font-size:0.65rem;cursor:pointer">
-                        ▶️ 啟動
+                        ▶️ <span data-i18n="啟動">啟動</span>
                     </button>
                 </div>
             </div>
@@ -985,7 +990,8 @@
                     <div style="flex:1">
                         <div
                             style="display:flex;justify-content:space-between;font-size:0.55rem;color:var(--text-secondary);margin-bottom:2px">
-                            <span>😌 放鬆</span><span>😰 緊張</span><span>🚨 高壓</span>
+                            <span>😌 <span data-i18n="放鬆">放鬆</span></span><span>😰 <span
+                                    data-i18n="緊張">緊張</span></span><span>🚨 <span data-i18n="高壓">高壓</span></span>
                         </div>
                         <div
                             style="background:rgba(255,255,255,0.08);border-radius:6px;height:18px;overflow:hidden;position:relative">
@@ -996,25 +1002,25 @@
                     </div>
                     <div style="text-align:center;min-width:50px">
                         <div id="stressScore" style="font-size:1.4rem;font-weight:800;color:#34c759">0</div>
-                        <div style="font-size:0.5rem;color:var(--text-secondary)">壓力指數</div>
+                        <div style="font-size:0.5rem;color:var(--text-secondary)" data-i18n="壓力指數">壓力指數</div>
                     </div>
                 </div>
                 <!-- Detail indicators -->
                 <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:6px">
                     <div
                         style="text-align:center;padding:6px;background:rgba(255,45,85,0.08);border-radius:8px;border:1px solid rgba(255,45,85,0.15)">
-                        <div style="font-size:0.55rem;color:var(--text-secondary)">💓 心率變化</div>
+                        <div style="font-size:0.55rem;color:var(--text-secondary)" data-i18n="心率變化">💓 心率變化</div>
                         <div id="stressHR" style="font-size:0.9rem;font-weight:700;color:#ff2d55">--</div>
                     </div>
                     <div
                         style="text-align:center;padding:6px;background:rgba(88,86,214,0.08);border-radius:8px;border:1px solid rgba(88,86,214,0.15)">
-                        <div style="font-size:0.55rem;color:var(--text-secondary)">📊 HRV 變化</div>
+                        <div style="font-size:0.55rem;color:var(--text-secondary)" data-i18n="HRV 變化">📊 HRV 變化</div>
                         <div id="stressHRV" style="font-size:0.9rem;font-weight:700;color:var(--accent-secondary)">--
                         </div>
                     </div>
                     <div
                         style="text-align:center;padding:6px;background:rgba(52,199,89,0.08);border-radius:8px;border:1px solid rgba(52,199,89,0.15)">
-                        <div style="font-size:0.55rem;color:var(--text-secondary)">🫁 呼吸變化</div>
+                        <div style="font-size:0.55rem;color:var(--text-secondary)" data-i18n="呼吸變化">🫁 呼吸變化</div>
                         <div id="stressBreath" style="font-size:0.9rem;font-weight:700;color:#34c759">--</div>
                     </div>
                 </div>
@@ -1024,7 +1030,7 @@
                 </div>
                 <!-- Disclaimer -->
                 <div style="text-align:center;font-size:0.5rem;color:var(--text-secondary);margin-top:6px;opacity:0.6">
-                    ⚠️ 僅供娛樂參考，緊張≠說謊，不具任何法律或醫學效力
+                    <span data-i18n="僅供娛樂參考，緊張≠說謊，不具任何法律或醫學效力">⚠️ 僅供娛樂參考，緊張≠說謊，不具任何法律或醫學效力</span>
                 </div>
             </div>
         </div>
@@ -1032,18 +1038,19 @@
         <!-- History Records -->
         <div class="card" style="margin-top:16px">
             <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
-                <span>📋 歷史記錄</span>
+                <span>📋 <span data-i18n="歷史記錄">歷史記錄</span></span>
                 <div style="display:flex;gap:6px">
                     <button onclick="exportSessionsCSV()"
                         style="background:rgba(88,86,214,0.2);color:var(--accent-secondary);border:1px solid rgba(88,86,214,0.3);padding:3px 8px;border-radius:6px;font-size:0.6rem;cursor:pointer">📥
                         匯出 CSV</button>
                     <button onclick="if(confirm('確定清除所有記錄？')){clearAllSessions().then(()=>loadHistoryUI())}"
                         style="background:rgba(255,45,85,0.15);color:#ff2d55;border:1px solid rgba(255,45,85,0.3);padding:3px 8px;border-radius:6px;font-size:0.6rem;cursor:pointer">🗑️
-                        清除</button>
+                        <span data-i18n="清除">清除</span></button>
                 </div>
             </div>
             <div id="historyTable" style="overflow-x:auto;max-height:300px;overflow-y:auto">
-                <div style="text-align:center;color:var(--text-secondary);padding:20px;font-size:0.75rem">載入中...</div>
+                <div style="text-align:center;color:var(--text-secondary);padding:20px;font-size:0.75rem"
+                    data-i18n="載入中...">載入中...</div>
             </div>
         </div>
     </div>
@@ -1070,17 +1077,192 @@
         // Theme
         let darkMode = true;
 
+        // ===== i18n Bilingual System =====
+        let currentLang = localStorage.getItem('rppg-lang') || 'dual'; // zh, en, dual
+        const I18N = {
+            '心率監測器': 'Heart Rate Monitor',
+            'POS+CHROM 融合 · Welch FFT · 多區域 ROI · 品質門控': 'POS+CHROM Fusion · Welch FFT · Multi-ROI · Quality Gate',
+            '使用者': 'User',
+            '訪客': 'Guest',
+            '新增': 'Add',
+            '輸入名稱': 'Enter name',
+            '即時影像': 'Live Camera',
+            '人': 'people',
+            '偵測中': 'Detecting',
+            '點擊下方按鈕開啟攝影機': 'Click below to start camera',
+            '等待啟動...': 'Waiting...',
+            '選擇鏡頭（預設）': 'Select Camera (Default)',
+            '品質門檻': 'Quality Threshold',
+            '開始偵測': 'Start Detection',
+            '停止偵測': 'Stop Detection',
+            '即時數據': 'Live Metrics',
+            '心率': 'Heart Rate',
+            '正常 60-100': 'Normal 60-100',
+            '正常 50-100': 'Normal 50-100',
+            '訊號品質': 'Signal Quality',
+            '良好 >70%': 'Good >70%',
+            '血氧 SpO2': 'SpO₂',
+            '正常 95-100': 'Normal 95-100',
+            '呼吸頻率': 'Breath Rate',
+            '次/分': 'br/min',
+            '正常 12-20': 'Normal 12-20',
+            '情緒狀態': 'Emotion',
+            '😊放鬆 → 😰緊張': '😊Relaxed → 😰Tense',
+            'HRV 詳細指標': 'HRV Details',
+            '正常 20-50ms': 'Normal 20-50ms',
+            '正常 >3%': 'Normal >3%',
+            '平衡 0.5-2.0': 'Balance 0.5-2.0',
+            '正常 600-1000ms': 'Normal 600-1000ms',
+            'PPG 訊號': 'PPG Signal',
+            '心率趨勢': 'HR Trend',
+            '脈診分析（王唯工諧波）': 'Pulse Analysis (Wang Harmonic)',
+            '測量時長': 'Duration',
+            '平均心率': 'Avg HR',
+            '最高心率': 'Max HR',
+            '最低心率': 'Min HR',
+            '平均血氧': 'Avg SpO₂',
+            '平均呼吸率': 'Avg Breath',
+            '壓力偵測模式': 'Stress Detection',
+            '啟動': 'Start',
+            '停止': 'Stop',
+            '放鬆': 'Relaxed',
+            '緊張': 'Tense',
+            '高壓': 'High Stress',
+            '壓力指數': 'Stress Index',
+            '心率變化': '💓 HR Change',
+            'HRV 變化': '📊 HRV Change',
+            '呼吸變化': '🫁 Breath Change',
+            '僅供娛樂參考，緊張≠說謊，不具任何法律或醫學效力': '⚠️ Entertainment only. Tension ≠ lying. No legal or medical validity.',
+            '歷史記錄': 'History',
+            '匯出 CSV': 'Export CSV',
+            '清除': 'Clear',
+            '載入中...': 'Loading...',
+            // Dynamic JS strings
+            '正在啟動攝影機...': 'Starting camera...',
+            '無法存取攝影機': 'Cannot access camera',
+            '偵測已停止，記錄已儲存': 'Detection stopped, session saved',
+            '偵測已停止（太短未儲存）': 'Stopped (too short to save)',
+            '校準中...': 'Calibrating...',
+            '🎯 多區域 ROI 追蹤中': '🎯 Multi-ROI Tracking',
+            '未偵測到臉部，請面對鏡頭': 'No face detected, please face camera',
+            '⚠️ 偵測到移動，請保持靜止': '⚠️ Motion detected, stay still',
+            '📡 訊號品質不足，請調整光線或姿勢': '📡 Low signal, adjust light or posture',
+            '請先測量數據再匯出報告': 'Please measure data before exporting',
+            '請先啟動攝影機偵測！': 'Please start camera detection first!',
+            '等待訊號...': 'Waiting for signal...',
+            '等待趨勢數據...': 'Waiting for trend data...',
+            '等待脈診數據...': 'Waiting for pulse data...',
+            '尚無記錄。開始偵測並停止後會自動儲存。': 'No records yet. Start a session and stop to auto-save.',
+            '日期': 'Date',
+            '時長': 'Duration',
+            '體質': 'Constitution',
+            '刪除': 'Delete',
+            '確定清除所有記錄？': 'Clear all records?',
+            '😌 非常放鬆 — 未偵測到壓力反應': '😌 Very relaxed — no stress detected',
+            '🙂 輕微波動 — 正常範圍內': '🙂 Minor fluctuation — within normal range',
+            '😐 中等壓力 — 偵測到生理反應': '😐 Moderate stress — physiological response detected',
+            '😰 明顯壓力 — 多項指標異常': '😰 Significant stress — multiple indicators abnormal',
+            '🚨 高度緊張 — 強烈生理壓力反應': '🚨 High tension — strong stress response',
+            '請保持放鬆，正常呼吸 30 秒...': 'Stay relaxed, breathe normally for 30s...',
+            '呼吸': 'Breath',
+            '次/分': 'br/min',
+            '鏡頭': 'Camera',
+            // Organ names (pulse analysis)
+            '心': 'Heart', '肝': 'Liver', '腎': 'Kidney', '脾': 'Spleen',
+            '肺': 'Lung', '胃': 'Stomach', '膽': 'Gallbladder', '膀胱': 'Bladder',
+            '大腸': 'L. Intestine', '三焦': 'Triple Burner', '小腸': 'S. Intestine',
+            // Organ statuses
+            '偏亢': 'Hyperactive', '正常': 'Normal', '偏弱': 'Weak',
+            '不足': 'Deficient', '偏高': 'Elevated',
+            // Constitution assessments
+            '心脾兩虛（注意心血管）': 'Heart-Spleen Deficiency (Watch Cardiovascular)',
+            '肝氣偏旺': 'Liver Qi Excess',
+            '腎氣不足': 'Kidney Qi Deficiency',
+            '脾氣虛弱': 'Spleen Qi Deficiency',
+            '肺氣不足': 'Lung Qi Deficiency',
+            '氣血平衡': 'Balanced Qi & Blood',
+            '略有偏差': 'Slight Imbalance',
+            // Emotion states
+            '高度緊張': 'High Tension',
+            '緊張': 'Tense',
+            '一般': 'Moderate',
+            '非常放鬆': 'Very Relaxed',
+            '參考': 'Ref',
+            // Accumulating data message
+            '累積高品質數據...': 'Accumulating quality data...',
+            // ROI labels
+            '額頭': 'Forehead', '左頰': 'L. Cheek', '右頰': 'R. Cheek',
+        };
+
+        // Store original zh text from data-i18n elements
+        const _i18nOriginals = new Map();
+
+        function applyLang() {
+            document.documentElement.setAttribute('data-lang', currentLang);
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const zhKey = el.getAttribute('data-i18n');
+                if (!_i18nOriginals.has(el)) _i18nOriginals.set(el, el.textContent);
+                const zhText = _i18nOriginals.get(el) || zhKey;
+                const enText = I18N[zhKey] || zhKey;
+                if (currentLang === 'zh') {
+                    el.textContent = zhText;
+                } else if (currentLang === 'en') {
+                    el.textContent = enText;
+                } else { // dual
+                    if (zhText !== enText) {
+                        el.innerHTML = `${zhText} <span style="opacity:0.55;font-size:0.85em">${enText}</span>`;
+                    } else {
+                        el.textContent = zhText;
+                    }
+                }
+            });
+            // Placeholders
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+                const zhKey = el.getAttribute('data-i18n-placeholder');
+                const enText = I18N[zhKey] || zhKey;
+                if (currentLang === 'en') el.placeholder = enText;
+                else if (currentLang === 'dual') el.placeholder = zhKey + ' / ' + enText;
+                else el.placeholder = zhKey;
+            });
+            localStorage.setItem('rppg-lang', currentLang);
+        }
+
+        function toggleLang() {
+            const modes = ['dual', 'zh', 'en'];
+            currentLang = modes[(modes.indexOf(currentLang) + 1) % modes.length];
+            applyLang();
+            const labels = { dual: '🌐 雙語', zh: '🇹🇼 中文', en: '🇺🇸 EN' };
+            document.getElementById('langBtn').textContent = { dual: '🌐', zh: '🇹🇼', en: '🇺🇸' }[currentLang];
+        }
+
+        // Translation helper for dynamic JS strings
+        function t(zhText) {
+            if (currentLang === 'zh') return zhText;
+            const en = I18N[zhText];
+            if (!en) return zhText;
+            if (currentLang === 'en') return en;
+            // dual
+            return zhText !== en ? `${zhText} ${en}` : zhText;
+        }
+
         // ===== Multi-ROI =====
         function getMultiROI(face, W, H) {
             const f = face;
-            // Forehead
-            const fh = { x: f.x + f.w * 0.2, y: f.y - f.h * 0.15, w: f.w * 0.6, h: f.h * 0.18 };
-            // Left cheek
-            const lc = { x: f.x + f.w * 0.05, y: f.y + f.h * 0.45, w: f.w * 0.25, h: f.h * 0.25 };
-            // Right cheek
-            const rc = { x: f.x + f.w * 0.7, y: f.y + f.h * 0.45, w: f.w * 0.25, h: f.h * 0.25 };
+            const yaw = f.yaw || 0;
+            const YAW_THRESHOLD = 0.20; // ~20% offset = ~25° turn
+            // Forehead (always visible)
+            const fh = { x: f.x + f.w * 0.2, y: f.y - f.h * 0.15, w: f.w * 0.6, h: f.h * 0.18, label: '額頭', colorIdx: 0 };
+            const roisRaw = [fh];
+            // Left cheek: hidden when head turned right (yaw < -threshold)
+            if (yaw > -YAW_THRESHOLD) {
+                roisRaw.push({ x: f.x + f.w * 0.12, y: f.y + f.h * 0.35, w: f.w * 0.22, h: f.h * 0.20, label: '左頰', colorIdx: 1 });
+            }
+            // Right cheek: hidden when head turned left (yaw > threshold)
+            if (yaw < YAW_THRESHOLD) {
+                roisRaw.push({ x: f.x + f.w * 0.66, y: f.y + f.h * 0.35, w: f.w * 0.22, h: f.h * 0.20, label: '右頰', colorIdx: 2 });
+            }
 
-            return [fh, lc, rc].map(r => ({
+            return roisRaw.map(r => ({
                 x: Math.round(Math.max(0, Math.min(r.x, W - 2))),
                 y: Math.round(Math.max(0, Math.min(r.y, H - 2))),
                 w: Math.round(Math.min(r.w, W - r.x)),
@@ -1105,9 +1287,10 @@
             await initFaceDetector();
             await populateCameras();
             resizeAll(); window.addEventListener('resize', resizeAll);
-            drawEmptyChart(signalCanvas, signalCtx, '等待訊號...');
-            drawEmptyChart(trendCanvas, trendCtx, '等待趨勢數據...');
-            drawEmptyChart(harmonicCanvas, harmonicCtx, '等待脈診數據...');
+            drawEmptyChart(signalCanvas, signalCtx, t('等待訊號...'));
+            drawEmptyChart(trendCanvas, trendCtx, t('等待趨勢數據...'));
+            drawEmptyChart(harmonicCanvas, harmonicCtx, t('等待脈診數據...'));
+            applyLang();
         }
 
         async function populateCameras() {
@@ -1115,11 +1298,11 @@
                 const devices = await navigator.mediaDevices.enumerateDevices();
                 const sel = document.getElementById('camSelect');
                 const currentVal = sel.value;
-                sel.innerHTML = '<option value="">📷 選擇鏡頭（預設）</option>';
+                sel.innerHTML = '<option value="">' + t('選擇鏡頭（預設）') + '</option>';
                 devices.filter(d => d.kind === 'videoinput').forEach((d, i) => {
                     const opt = document.createElement('option');
                     opt.value = d.deviceId;
-                    opt.textContent = d.label || `鏡頭 ${i + 1}`;
+                    opt.textContent = d.label || `${t('鏡頭')} ${i + 1}`;
                     if (d.label && d.label.toLowerCase().includes('iphone')) opt.textContent = '📱 ' + d.label;
                     sel.appendChild(opt);
                 });
@@ -1149,10 +1332,30 @@
                         res.detections.forEach(d => {
                             const bb = d.boundingBox;
                             const vw = samplingCanvas.width, vh = samplingCanvas.height;
+                            // Compute head tilt angle from ear tragion keypoints (wider baseline = more accurate)
+                            let angle = 0;
+                            let yaw = 0; // head left-right rotation
+                            if (d.landmarks && d.landmarks.length >= 6) {
+                                const leftEar = d.landmarks[4];
+                                const rightEar = d.landmarks[5];
+                                angle = Math.atan2(
+                                    (rightEar.y - leftEar.y) * vh,
+                                    (rightEar.x - leftEar.x) * vw
+                                );
+                                // Estimate yaw from nose position relative to face center
+                                if (d.landmarks.length >= 3) {
+                                    const nose = d.landmarks[2];
+                                    const noseFaceX = (nose.x - bb.xCenter + bb.width / 2) / bb.width; // 0-1 within face
+                                    yaw = (noseFaceX - 0.5) * 2; // -1 (turned right) to +1 (turned left)
+                                }
+                            }
                             allFaceBoxes.push({
                                 x: bb.xCenter * vw - (bb.width * vw) / 2,
                                 y: bb.yCenter * vh - (bb.height * vh) / 2,
-                                w: bb.width * vw, h: bb.height * vh
+                                w: bb.width * vw, h: bb.height * vh,
+                                cx: bb.xCenter * vw, cy: bb.yCenter * vh,
+                                angle: angle,
+                                yaw: yaw
                             });
                         });
                     }
@@ -1180,6 +1383,10 @@
             smoothBox.y = lerp(smoothBox.y, raw.y, SM);
             smoothBox.w = lerp(smoothBox.w, raw.w, SM);
             smoothBox.h = lerp(smoothBox.h, raw.h, SM);
+            smoothBox.cx = lerp(smoothBox.cx || raw.cx, raw.cx, SM);
+            smoothBox.cy = lerp(smoothBox.cy || raw.cy, raw.cy, SM);
+            smoothBox.angle = lerp(smoothBox.angle || 0, raw.angle || 0, SM);
+            smoothBox.yaw = lerp(smoothBox.yaw || 0, raw.yaw || 0, SM);
             return { ...smoothBox };
         }
 
@@ -1208,7 +1415,7 @@
                 // Refresh camera list after getting permission
                 await populateCameras();
                 return true;
-            } catch (e) { setStatus('error', '無法存取攝影機: ' + e.message); return false; }
+            } catch (e) { setStatus('error', t('無法存取攝影機') + ': ' + e.message); return false; }
         }
         function stopCamera() {
             if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
@@ -1244,12 +1451,12 @@
         async function toggleMonitoring() {
             const btn = document.getElementById('startBtn');
             if (!isRunning) {
-                btn.disabled = true; setStatus('calibrating', '正在啟動攝影機...');
+                btn.disabled = true; setStatus('calibrating', t('正在啟動攝影機...'));
                 if (!await startCamera()) { btn.disabled = false; return; }
                 isRunning = true; startTime = Date.now(); frameCount = 0;
                 gSig.length = 0; rSig.length = 0; bSig.length = 0; ts.length = 0; hrHist.length = 0; rrIntervals.length = 0;
                 allHR = []; allSpO2 = []; allBreath = []; hrTrend = [];
-                btn.className = 'btn stop'; btn.textContent = '⏹ 停止偵測'; btn.disabled = false;
+                btn.className = 'btn stop'; btn.textContent = '⏹ ' + t('停止偵測'); btn.disabled = false;
                 document.getElementById('heartIcon').classList.add('beating');
                 document.getElementById('calBar').classList.add('vis');
                 durationInterval = setInterval(updateDuration, 1000);
@@ -1257,7 +1464,7 @@
             } else {
                 isRunning = false; if (animFrameId) cancelAnimationFrame(animFrameId);
                 stopCamera(); clearInterval(durationInterval);
-                btn.className = 'btn start'; btn.textContent = '🚀 開始偵測';
+                btn.className = 'btn start'; btn.textContent = '🚀 ' + t('開始偵測');
                 document.getElementById('heartIcon').classList.remove('beating');
                 document.getElementById('calBar').classList.remove('vis');
                 faceCtx.clearRect(0, 0, faceCanvas.width, faceCanvas.height);
@@ -1276,14 +1483,14 @@
                         emotion: lastEmo ? lastEmo.state : '',
                         harmonics: window._smoothHarmonics ? Array.from(window._smoothHarmonics) : null
                     }).then(() => { loadHistoryUI(); });
-                    setStatus('idle', '✅ 偵測已停止，記錄已儲存');
+                    setStatus('idle', '✅ ' + t('偵測已停止，記錄已儲存'));
                 } else {
-                    setStatus('idle', '偵測已停止（太短未儲存）');
+                    setStatus('idle', t('偵測已停止（太短未儲存）'));
                 }
             }
         }
 
-        // ===== Main Loop =====
+        let mpSendCount = 0; // independent counter for MediaPipe sends (always increments)
         function processFrame() {
             if (!isRunning) return;
             const video = document.getElementById('webcam');
@@ -1292,7 +1499,8 @@
             samplingCtx.drawImage(video, 0, 0, samplingCanvas.width, samplingCanvas.height);
             const W = samplingCanvas.width, H = samplingCanvas.height;
 
-            if (hasFaceAPI && mpFace && frameCount % 3 === 0) mpFace.send({ image: video }).catch(() => { });
+            mpSendCount++;
+            if (hasFaceAPI && mpFace && mpSendCount % 3 === 0) mpFace.send({ image: video }).catch(() => { });
 
             const smoothed = lastFaceBox ? getSmoothed(lastFaceBox) : null;
 
@@ -1300,8 +1508,12 @@
                 const rois = getMultiROI(smoothed, W, H);
                 drawOverlay(smoothed, rois);
 
-                // Average RGB across all ROIs (weighted: forehead 60%, cheeks 20% each)
-                const weights = [0.6, 0.2, 0.2];
+                // Weights adapt based on number of visible ROIs
+                // 1 ROI (forehead only) = [1.0]
+                // 2 ROIs (forehead + 1 cheek) = [0.7, 0.3]
+                // 3 ROIs (forehead + 2 cheeks) = [0.6, 0.2, 0.2]
+                const weights = rois.length === 1 ? [1.0] :
+                    rois.length === 2 ? [0.7, 0.3] : [0.6, 0.2, 0.2];
                 let rAvg = 0, gAvg = 0, bAvg = 0, totalW = 0;
                 rois.forEach((roi, idx) => {
                     const w = weights[idx] || 0.2;
@@ -1318,16 +1530,17 @@
                 document.getElementById('calFill').style.width = prog + '%';
 
                 if (frameCount < 90) {
-                    setStatus('calibrating', `校準中... ${Math.round(prog)}%`);
+                    setStatus('calibrating', t('校準中...') + ` ${Math.round(prog)}%`);
                 } else {
                     document.getElementById('calBar').classList.remove('vis');
                     if (frameCount % 10 === 0) runAnalysis();
-                    setStatus('active', '🎯 多區域 ROI 追蹤中');
+                    setStatus('active', t('🎯 多區域 ROI 追蹤中'));
                 }
                 drawSignal();
             } else {
                 faceCtx.clearRect(0, 0, faceCanvas.width, faceCanvas.height);
-                setStatus('calibrating', '未偵測到臉部，請面對鏡頭');
+                smoothBox = null; // reset so box snaps to new position on return
+                setStatus('calibrating', t('未偵測到臉部，請面對鏡頭'));
             }
             animFrameId = requestAnimationFrame(processFrame);
         }
@@ -1355,7 +1568,7 @@
             // Motion artifact detection — skip if moving too much
             if (detectMotionArtifact(rSig, gSig, bSig, 10)) {
                 motionWarning = true;
-                setStatus('calibrating', '⚠️ 偵測到移動，請保持靜止');
+                setStatus('calibrating', t('⚠️ 偵測到移動，請保持靜止'));
                 return;
             }
             motionWarning = false;
@@ -1368,7 +1581,7 @@
 
             // Signal quality gating — reject bad frames
             if (!quality.usable) {
-                setStatus('calibrating', '📡 訊號品質不足，請調整光線或姿勢');
+                setStatus('calibrating', t('📡 訊號品質不足，請調整光線或姿勢'));
                 return;
             }
 
@@ -1472,7 +1685,7 @@
                                 harmonicData.constitution = window._lastConstitution;
                                 drawHarmonics(harmonicData);
                             } else {
-                                drawEmptyChart(harmonicCanvas, harmonicCtx, `累積高品質數據... (${window._harmonicSamples}/3)`);
+                                drawEmptyChart(harmonicCanvas, harmonicCtx, t('累積高品質數據...') + ` (${window._harmonicSamples}/3)`);
                             }
                         }
                     }
@@ -1504,25 +1717,36 @@
         function drawOverlay(face, rois) {
             faceCtx.clearRect(0, 0, faceCanvas.width, faceCanvas.height);
             const sx = faceCanvas.width / samplingCanvas.width, sy = faceCanvas.height / samplingCanvas.height;
+            const angle = face.angle || 0;
+            const fcx = (face.cx || (face.x + face.w / 2)) * sx;
+            const fcy = (face.cy || (face.y + face.h / 2)) * sy;
+
+            // Rotate all overlays around face center
+            faceCtx.save();
+            faceCtx.translate(fcx, fcy);
+            faceCtx.rotate(angle);
 
             // Face box
             faceCtx.strokeStyle = 'rgba(88,86,214,0.5)'; faceCtx.lineWidth = 2; faceCtx.setLineDash([6, 3]);
-            faceCtx.strokeRect(face.x * sx, face.y * sy, face.w * sx, face.h * sy);
+            faceCtx.strokeRect(-face.w * sx / 2, -face.h * sy / 2, face.w * sx, face.h * sy);
 
-            // ROIs
+            // ROIs (relative to face center)
             const colors = ['rgba(48,209,88,0.8)', 'rgba(90,200,250,0.8)', 'rgba(255,159,10,0.8)'];
-            const labels = ['額頭', '左頰', '右頰'];
             faceCtx.setLineDash([]);
-            rois.forEach((r, i) => {
-                faceCtx.strokeStyle = colors[i] || colors[0]; faceCtx.lineWidth = 2;
-                faceCtx.strokeRect(r.x * sx, r.y * sy, r.w * sx, r.h * sy);
-                faceCtx.fillStyle = colors[i].replace('0.8', '0.1');
-                faceCtx.fillRect(r.x * sx, r.y * sy, r.w * sx, r.h * sy);
-                faceCtx.font = '10px Inter'; faceCtx.fillStyle = colors[i];
-                faceCtx.fillText(labels[i], r.x * sx, (r.y - 3) * sy);
+            rois.forEach((r) => {
+                const color = colors[r.colorIdx || 0];
+                const rx = (r.x - (face.cx || (face.x + face.w / 2))) * sx;
+                const ry = (r.y - (face.cy || (face.y + face.h / 2))) * sy;
+                faceCtx.strokeStyle = color; faceCtx.lineWidth = 2;
+                faceCtx.strokeRect(rx, ry, r.w * sx, r.h * sy);
+                faceCtx.fillStyle = color.replace('0.8', '0.1');
+                faceCtx.fillRect(rx, ry, r.w * sx, r.h * sy);
+                faceCtx.font = '10px Inter'; faceCtx.fillStyle = color;
+                faceCtx.fillText(t(r.label || ''), rx, ry - 3);
             });
+            faceCtx.restore();
 
-            // Other faces
+            // Other faces (no rotation)
             allFaceBoxes.slice(1).forEach(f => {
                 faceCtx.strokeStyle = 'rgba(255,45,85,0.4)'; faceCtx.lineWidth = 1; faceCtx.setLineDash([4, 4]);
                 faceCtx.strokeRect(f.x * sx, f.y * sy, f.w * sx, f.h * sy);
@@ -1660,7 +1884,7 @@
                 // Organ name
                 harmonicCtx.font = '9px Inter';
                 harmonicCtx.fillStyle = 'rgba(255,255,255,0.5)';
-                harmonicCtx.fillText(b.name, x + barW / 2, h - padBot + 12);
+                harmonicCtx.fillText(t(b.name), x + barW / 2, h - padBot + 12);
 
                 // Harmonic label
                 harmonicCtx.font = '7px JetBrains Mono';
@@ -1672,15 +1896,15 @@
             const detail = document.getElementById('harmonicDetail');
             detail.innerHTML = bars.slice(0, 7).map(b =>
                 `<div style="text-align:center;padding:4px;background:${b.color}15;border-radius:6px;border:1px solid ${b.color}33">
-                    <div>${b.emoji} ${b.name}</div>
+                    <div>${b.emoji} ${t(b.name)}</div>
                     <div style="font-weight:700;color:${b.color}">${Math.round(b.percentage)}%</div>
-                    <div style="color:${b.statusColor};font-size:0.55rem">${b.status}</div>
-                    <div style="color:rgba(255,255,255,0.3);font-size:0.5rem">參考 ${b.expectedRange || ''}</div>
+                    <div style="color:${b.statusColor};font-size:0.55rem">${t(b.status)}</div>
+                    <div style="color:rgba(255,255,255,0.3);font-size:0.5rem">${t('參考')} ${b.expectedRange || ''}</div>
                 </div>`
             ).join('');
 
             // Constitution badge
-            document.getElementById('constitutionBadge').textContent = data.constitutionEmoji + ' ' + data.constitution;
+            document.getElementById('constitutionBadge').textContent = data.constitutionEmoji + ' ' + t(data.constitution);
         }
 
         // ===== Helpers =====
@@ -1701,12 +1925,12 @@
             document.getElementById('maxHR').textContent = Math.max(...allHR) + ' BPM';
             document.getElementById('minHR').textContent = Math.min(...allHR) + ' BPM';
             if (allSpO2.length) document.getElementById('avgSpO2').textContent = Math.round(allSpO2.reduce((a, b) => a + b) / allSpO2.length) + '%';
-            if (allBreath.length) document.getElementById('avgBreath').textContent = Math.round(allBreath.reduce((a, b) => a + b) / allBreath.length) + ' 次/分';
+            if (allBreath.length) document.getElementById('avgBreath').textContent = Math.round(allBreath.reduce((a, b) => a + b) / allBreath.length) + ' ' + t('次/分');
         }
 
         // ===== Export =====
         function exportReport() {
-            if (!allHR.length) { alert('請先測量數據再匯出報告'); return; }
+            if (!allHR.length) { alert(t('請先測量數據再匯出報告')); return; }
             const now = new Date();
             const elapsed = startTime ? Math.floor((Date.now() - startTime) / 1000) : 0;
             const avgHR = Math.round(allHR.reduce((a, b) => a + b) / allHR.length);
@@ -1806,7 +2030,7 @@ ${hrTrend.slice(-20).map(t => {
 
         function toggleStressMode() {
             if (!isRunning) {
-                alert('請先啟動攝影機偵測！');
+                alert(t('請先啟動攝影機偵測！'));
                 return;
             }
             const btn = document.getElementById('stressBtn');
@@ -1816,7 +2040,7 @@ ${hrTrend.slice(-20).map(t => {
                 // Stop stress mode
                 stressMode = false;
                 stressPhaseState = 'idle';
-                btn.innerHTML = '▶️ 啟動';
+                btn.innerHTML = '▶️ ' + t('啟動');
                 btn.style.background = 'rgba(255,149,0,0.2)';
                 btn.style.color = '#ff9500';
                 panel.style.display = 'none';
@@ -1826,13 +2050,13 @@ ${hrTrend.slice(-20).map(t => {
                 stressPhaseState = 'baseline';
                 stressBaseline = { hr: [], hrv: [], breath: [] };
                 stressStartTime = Date.now();
-                btn.innerHTML = '⏹ 停止';
+                btn.innerHTML = '⏹ ' + t('停止');
                 btn.style.background = 'rgba(255,45,85,0.2)';
                 btn.style.color = '#ff2d55';
                 panel.style.display = 'block';
                 document.getElementById('stressProgress').style.display = 'block';
                 document.getElementById('stressVerdict').style.display = 'none';
-                document.getElementById('stressPhase').innerHTML = '📏 <b>Phase 1：建立基線</b><br>請保持放鬆，正常呼吸 30 秒...';
+                document.getElementById('stressPhase').innerHTML = '📏 <b>Phase 1：' + t('請保持放鬆，正常呼吸 30 秒...') + '</b>';
                 document.getElementById('stressScore').textContent = '0';
                 document.getElementById('stressGauge').style.width = '0%';
                 document.getElementById('stressHR').textContent = '--';
@@ -1864,7 +2088,7 @@ ${hrTrend.slice(-20).map(t => {
 
                     stressPhaseState = 'active';
                     document.getElementById('stressProgress').style.display = 'none';
-                    document.getElementById('stressPhase').innerHTML = `🎯 <b>Phase 2：提問模式</b><br>基線 — HR: ${Math.round(stressBaselineAvg.hr)} · HRV: ${Math.round(stressBaselineAvg.hrv)} · 呼吸: ${Math.round(stressBaselineAvg.breath)}`;
+                    document.getElementById('stressPhase').innerHTML = `🎯 <b>Phase 2</b><br>Baseline — HR: ${Math.round(stressBaselineAvg.hr)} · HRV: ${Math.round(stressBaselineAvg.hrv)} · ${t('呼吸')}: ${Math.round(stressBaselineAvg.breath)}`;
 
                     // Vibrate on mobile to signal readiness
                     if (navigator.vibrate) navigator.vibrate(200);
@@ -1917,23 +2141,23 @@ ${hrTrend.slice(-20).map(t => {
                 const verdict = document.getElementById('stressVerdict');
                 verdict.style.display = 'block';
                 if (clampedScore < 20) {
-                    verdict.textContent = '😌 非常放鬆 — 未偵測到壓力反應';
+                    verdict.textContent = t('😌 非常放鬆 — 未偵測到壓力反應');
                     verdict.style.background = 'rgba(52,199,89,0.12)';
                     verdict.style.color = '#34c759';
                 } else if (clampedScore < 40) {
-                    verdict.textContent = '🙂 輕微波動 — 正常範圍內';
+                    verdict.textContent = t('🙂 輕微波動 — 正常範圍內');
                     verdict.style.background = 'rgba(52,199,89,0.08)';
                     verdict.style.color = '#30d158';
                 } else if (clampedScore < 60) {
-                    verdict.textContent = '😐 中等壓力 — 偵測到生理反應';
+                    verdict.textContent = t('😐 中等壓力 — 偵測到生理反應');
                     verdict.style.background = 'rgba(255,149,0,0.12)';
                     verdict.style.color = '#ff9500';
                 } else if (clampedScore < 80) {
-                    verdict.textContent = '😰 明顯壓力 — 多項指標異常';
+                    verdict.textContent = t('😰 明顯壓力 — 多項指標異常');
                     verdict.style.background = 'rgba(255,149,0,0.15)';
                     verdict.style.color = '#ff9500';
                 } else {
-                    verdict.textContent = '🚨 高度緊張 — 強烈生理壓力反應';
+                    verdict.textContent = t('🚨 高度緊張 — 強烈生理壓力反應');
                     verdict.style.background = 'rgba(255,45,85,0.15)';
                     verdict.style.color = '#ff2d55';
                 }
@@ -1945,17 +2169,17 @@ ${hrTrend.slice(-20).map(t => {
             const container = document.getElementById('historyTable');
             const sessions = await getSessions(50);
             if (!sessions || sessions.length === 0) {
-                container.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:20px;font-size:0.75rem">尚無記錄。開始偵測並停止後會自動儲存。</div>';
+                container.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:20px;font-size:0.75rem">' + t('尚無記錄。開始偵測並停止後會自動儲存。') + '</div>';
                 return;
             }
             let html = `<table style="width:100%;border-collapse:collapse;font-size:0.65rem">
                 <thead><tr style="color:var(--text-secondary);border-bottom:1px solid var(--border-color)">
-                    <th style="padding:6px;text-align:left">日期</th>
-                    <th style="padding:6px">時長</th>
+                    <th style="padding:6px;text-align:left">${t('日期')}</th>
+                    <th style="padding:6px">${t('時長')}</th>
                     <th style="padding:6px">❤️ HR</th>
                     <th style="padding:6px">📊 HRV</th>
                     <th style="padding:6px">🫁 SpO2</th>
-                    <th style="padding:6px">☯️ 體質</th>
+                    <th style="padding:6px">☯️ ${t('體質')}</th>
                     <th style="padding:6px">🎭</th>
                     <th style="padding:6px"></th>
                 </tr></thead><tbody>`;
@@ -1973,7 +2197,7 @@ ${hrTrend.slice(-20).map(t => {
                     <td style="padding:5px;text-align:center">${s.emotion || '--'}</td>
                     <td style="padding:5px;text-align:center">
                         <button onclick="deleteSession('${s.id}').then(()=>loadHistoryUI())"
-                            style="background:none;border:none;color:#ff2d55;cursor:pointer;font-size:0.7rem" title="刪除">✕</button>
+                            style="background:none;border:none;color:#ff2d55;cursor:pointer;font-size:0.7rem" title="${t('刪除')}">✕</button>
                     </td>
                 </tr>`;
             });
@@ -1989,7 +2213,7 @@ ${hrTrend.slice(-20).map(t => {
             select.innerHTML = '';
             // Always have default
             if (!users.find(u => u.username === 'default')) {
-                select.innerHTML += '<option value="default">訪客</option>';
+                select.innerHTML += '<option value="default">' + t('訪客') + '</option>';
             }
             users.forEach(u => {
                 const selected = u.username === current ? 'selected' : '';
@@ -2043,6 +2267,7 @@ ${hrTrend.slice(-20).map(t => {
             applySectionOrder();
             setTimeout(loadUsersUI, 300);
             setTimeout(loadHistoryUI, 500);
+            setTimeout(applyLang, 100);
         });
     </script>
 </body>

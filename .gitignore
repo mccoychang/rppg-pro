@@ -1,0 +1,6 @@
+rppg_history.db
+__pycache__/
+*.pyc
+.cert.pem
+.key.pem
+serve.py
