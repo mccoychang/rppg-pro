@@ -1097,8 +1097,8 @@
         let foreheadYOffset = parseInt(localStorage.getItem('rppg-forehead-offset')) || 0;
         let faceYOffset = parseInt(localStorage.getItem('rppg-face-offset')) || 0;
 
-        // Pulse analysis strict mode
-        let strictPulseMode = localStorage.getItem('rppg-strict-pulse') === 'true';
+        // Pulse analysis strict mode (0=normal, 1=strict, 2=super strict)
+        let pulseStrictLevel = parseInt(localStorage.getItem('rppg-strict-pulse')) || 0;
 
         // Sound
         let audioCtx = null, soundEnabled = false;
@@ -1225,8 +1225,10 @@
             '臉部偏移': 'Face Offset',
             '一般模式': 'Normal',
             '嚴格模式': 'Strict',
+            '超級嚴格': 'Ultra Strict',
             '⚠️ rPPG 訊號僅供參考，臨床診斷請使用專業脈診儀': '⚠️ rPPG signal is for reference only. Use professional equipment for clinical diagnosis.',
             '⚠️ 嚴格模式：標準收窄，僅供深度參考，非臨床診斷': '⚠️ Strict mode: narrower ranges, for reference only, not clinical diagnosis.',
+            '⚠️ 超級嚴格：極窄標準，極少人達標，純屬研究參考': '⚠️ Ultra strict: extremely narrow ranges, very few pass, research reference only.',
         };
 
         // Store original zh text from data-i18n elements
@@ -1337,9 +1339,13 @@
             document.getElementById('faceOffsetSlider').value = savedFC;
             updateFaceOffset(savedFC);
             // Restore strict pulse mode UI
-            if (strictPulseMode) {
-                strictPulseMode = false; // reset so toggle flips to true
-                toggleStrictPulse();
+            if (pulseStrictLevel > 0) {
+                pulseStrictLevel = 0;
+                toggleStrictPulse(); // cycles 0 → 1, restoring saved level
+                // need to cycle to correct level
+                for (let i = 1; i < parseInt(localStorage.getItem('rppg-strict-pulse')); i++) {
+                    toggleStrictPulse();
+                }
             }
         }
 
@@ -1355,23 +1361,30 @@
         }
 
         function toggleStrictPulse() {
-            strictPulseMode = !strictPulseMode;
-            localStorage.setItem('rppg-strict-pulse', strictPulseMode);
+            pulseStrictLevel = (pulseStrictLevel + 1) % 3;
+            localStorage.setItem('rppg-strict-pulse', pulseStrictLevel);
             const btn = document.getElementById('strictPulseBtn');
-            if (strictPulseMode) {
-                btn.innerHTML = '🔬 <span data-i18n="嚴格模式">' + t('嚴格模式') + '</span>';
-                btn.style.background = 'rgba(255,45,85,0.2)';
-                btn.style.color = '#ff2d55';
-                btn.style.borderColor = 'rgba(255,45,85,0.3)';
-                document.getElementById('pulseDisclaimer').innerHTML = '<span data-i18n="⚠️ 嚴格模式：標準收窄，僅供深度參考，非臨床診斷">' + t('⚠️ 嚴格模式：標準收窄，僅供深度參考，非臨床診斷') + '</span>';
-            } else {
-                btn.innerHTML = '📊 <span data-i18n="一般模式">' + t('一般模式') + '</span>';
-                btn.style.background = 'rgba(88,86,214,0.2)';
-                btn.style.color = 'var(--accent-secondary)';
-                btn.style.borderColor = 'rgba(88,86,214,0.3)';
-                document.getElementById('pulseDisclaimer').innerHTML = '<span data-i18n="⚠️ rPPG 訊號僅供參考，臨床診斷請使用專業脈診儀">' + t('⚠️ rPPG 訊號僅供參考，臨床診斷請使用專業脈診儀') + '</span>';
-            }
-            // Reset harmonic smoothing so strict mode re-evaluates fresh
+            const modes = [
+                {
+                    icon: '📊', label: '一般模式', bg: 'rgba(88,86,214,0.2)', color: 'var(--accent-secondary)', border: 'rgba(88,86,214,0.3)',
+                    disclaimer: '⚠️ rPPG 訊號僅供參考，臨床診斷請使用專業脈診儀'
+                },
+                {
+                    icon: '🔬', label: '嚴格模式', bg: 'rgba(255,159,10,0.2)', color: '#ff9f0a', border: 'rgba(255,159,10,0.3)',
+                    disclaimer: '⚠️ 嚴格模式：標準收窄，僅供深度參考，非臨床診斷'
+                },
+                {
+                    icon: '⚡', label: '超級嚴格', bg: 'rgba(255,45,85,0.2)', color: '#ff2d55', border: 'rgba(255,45,85,0.3)',
+                    disclaimer: '⚠️ 超級嚴格：極窄標準，極少人達標，純屬研究參考'
+                },
+            ];
+            const m = modes[pulseStrictLevel];
+            btn.innerHTML = m.icon + ' <span data-i18n="' + m.label + '">' + t(m.label) + '</span>';
+            btn.style.background = m.bg;
+            btn.style.color = m.color;
+            btn.style.borderColor = m.border;
+            document.getElementById('pulseDisclaimer').innerHTML = '<span data-i18n="' + m.disclaimer + '">' + t(m.disclaimer) + '</span>';
+            // Reset harmonic smoothing so new mode re-evaluates fresh
             window._harmonicSamples = 0;
             window._smoothHarmonics = null;
         }
@@ -1752,7 +1765,7 @@
 
                     // Pulse Harmonic Analysis (脈診) — quality-gated + accumulated smoothing
                     if (frameCount % 50 === 0 && quality.score >= 40) {
-                        const harmonicData = pulseHarmonicAnalysis(filtered, fps, strictPulseMode);
+                        const harmonicData = pulseHarmonicAnalysis(filtered, fps, pulseStrictLevel);
                         if (harmonicData) {
                             if (!window._harmonicSamples) window._harmonicSamples = 0;
                             window._harmonicSamples++;

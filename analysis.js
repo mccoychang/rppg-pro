@@ -214,66 +214,63 @@ function pulseHarmonicAnalysis(signal, fps, strict) {
     // Calculate percentages and health status
     if (totalEnergy === 0) return null;
 
-    // Expected ranges: strict mode uses narrower, research-ideal ranges
-    // Normal mode uses wider, more forgiving ranges
-    const expectedRanges = strict ? [
-        { min: 30, max: 45 },  // C0 心: strict ideal ~32-42%
-        { min: 15, max: 25 },  // C1 肝: strict ~16-23%
-        { min: 10, max: 18 },  // C2 腎: strict ~11-16%
-        { min: 6, max: 12 },   // C3 脾: strict ~7-11%
-        { min: 3, max: 8 },    // C4 肺: strict ~4-7%
-        { min: 2, max: 6 },    // C5 胃: strict ~2.5-5%
-        { min: 1, max: 5 },    // C6 膽: strict ~1.5-4%
-        { min: 0.5, max: 4 },  // C7 膀胱: strict ~0.8-3%
-        { min: 0.3, max: 3 },  // C8 大腸: strict ~0.5-2.5%
-        { min: 0.2, max: 2 },  // C9 三焦: strict ~0.3-1.5%
-        { min: 0.1, max: 2 },  // C10 小腸: strict ~0.2-1.5%
-    ] : [
-        { min: 25, max: 55 },  // C0 心: dominant, ~30-50% of total energy
-        { min: 12, max: 28 },  // C1 肝: second largest, ~15-25%
-        { min: 7, max: 20 },   // C2 腎: ~10-18%
-        { min: 4, max: 14 },   // C3 脾: ~6-12%
-        { min: 2, max: 10 },   // C4 肺: ~3-8%
-        { min: 1, max: 8 },    // C5 胃: ~2-6%
-        { min: 0.5, max: 6 },  // C6 膽: ~1-5%
-        { min: 0.3, max: 5 },  // C7 膀胱: ~0.5-4%
-        { min: 0.2, max: 4 },  // C8 大腸: ~0.3-3%
-        { min: 0.1, max: 3 },  // C9 三焦: ~0.2-2%
-        { min: 0.1, max: 3 },  // C10 小腸: ~0.1-2%
+    // Expected ranges by strictness level:
+    // 0 = normal (wide), 1 = strict (narrow), 2 = super strict (very narrow, clinical-ideal)
+    const rangesByLevel = [
+        // Level 0: Normal (forgiving)
+        [
+            { min: 25, max: 55 }, { min: 12, max: 28 }, { min: 7, max: 20 },
+            { min: 4, max: 14 }, { min: 2, max: 10 }, { min: 1, max: 8 },
+            { min: 0.5, max: 6 }, { min: 0.3, max: 5 }, { min: 0.2, max: 4 },
+            { min: 0.1, max: 3 }, { min: 0.1, max: 3 },
+        ],
+        // Level 1: Strict
+        [
+            { min: 30, max: 45 }, { min: 15, max: 25 }, { min: 10, max: 18 },
+            { min: 6, max: 12 }, { min: 3, max: 8 }, { min: 2, max: 6 },
+            { min: 1, max: 5 }, { min: 0.5, max: 4 }, { min: 0.3, max: 3 },
+            { min: 0.2, max: 2 }, { min: 0.1, max: 2 },
+        ],
+        // Level 2: Super Strict (clinical-ideal, very narrow tolerance)
+        [
+            { min: 33, max: 42 }, { min: 17, max: 23 }, { min: 11, max: 16 },
+            { min: 7, max: 11 }, { min: 4, max: 7 }, { min: 2.5, max: 5 },
+            { min: 1.5, max: 4 }, { min: 0.8, max: 3 }, { min: 0.5, max: 2.5 },
+            { min: 0.3, max: 1.5 }, { min: 0.2, max: 1.5 },
+        ],
     ];
+    const level = (strict === 2) ? 2 : (strict ? 1 : 0);
+    const expectedRanges = rangesByLevel[level];
 
-    // Threshold multipliers: strict mode is more sensitive
-    const overMult = strict ? 1.1 : 1.3;    // 偏亢 threshold (above max)
-    const weakMult = strict ? 0.8 : 0.5;    // 偏弱/不足 boundary
-    const defMult = strict ? 0.8 : 0.6;     // constitution deficiency threshold
+    // Threshold multipliers by level: higher = more sensitive
+    const overMult = [1.3, 1.1, 1.05][level];
+    const weakMult = [0.5, 0.8, 0.9][level];
+    const defMult = [0.6, 0.8, 0.9][level];
+    const cExcessMult = [1.2, 1.05, 1.0][level];
 
     harmonics.forEach((h, i) => {
         h.percentage = (h.amplitude / totalEnergy) * 100;
         h.normalized = h.amplitude / harmonics[0].amplitude;
 
-        // Health assessment based on expected range for each harmonic
         const range = expectedRanges[i];
         if (h.percentage > range.max * overMult) {
-            h.status = '偏亢'; h.statusColor = '#ff9f0a';   // significantly above range
+            h.status = '偏亢'; h.statusColor = '#ff9f0a';
         } else if (h.percentage >= range.min && h.percentage <= range.max) {
-            h.status = '正常'; h.statusColor = '#30d158';   // within expected range
+            h.status = '正常'; h.statusColor = '#30d158';
         } else if (h.percentage >= range.min * weakMult && h.percentage < range.min) {
-            h.status = '偏弱'; h.statusColor = '#ff9f0a';   // below range but not critical
+            h.status = '偏弱'; h.statusColor = '#ff9f0a';
         } else if (h.percentage < range.min * weakMult) {
-            h.status = '不足'; h.statusColor = '#ff2d55';   // significantly below range
+            h.status = '不足'; h.statusColor = '#ff2d55';
         } else {
-            h.status = '偏高'; h.statusColor = '#ffd60a';   // slightly above range
+            h.status = '偏高'; h.statusColor = '#ffd60a';
         }
-
-        // Store the expected range for display
         h.expectedRange = `${range.min}-${range.max}%`;
     });
 
-    // Constitution assessment based on published clinical findings
+    // Constitution assessment
     const c0 = harmonics[0], c1 = harmonics[1], c2 = harmonics[2];
     const c3 = harmonics[3], c4 = harmonics[4];
 
-    // Check if harmonics follow healthy decreasing pattern: C1 > C2 > C3 > C4
     const healthyOrder = c1.percentage > c2.percentage &&
         c2.percentage > c3.percentage &&
         c3.percentage > c4.percentage;
@@ -281,51 +278,35 @@ function pulseHarmonicAnalysis(signal, fps, strict) {
     let constitution = '';
     let constitutionEmoji = '⚖️';
 
-    // Disease pattern detection from research:
-    // Strict mode: more sensitive detection (lower thresholds)
-    const cExcessMult = strict ? 1.05 : 1.2;  // liver excess threshold
-
     if (c0.percentage < expectedRanges[0].min && c3.percentage < expectedRanges[3].min) {
-        constitution = '心脾兩虛（注意心血管）';
-        constitutionEmoji = '⚠️';
+        constitution = '心脾兩虛（注意心血管）'; constitutionEmoji = '⚠️';
+    } else if (c1.percentage > expectedRanges[1].max * cExcessMult) {
+        constitution = '肝氣偏旺'; constitutionEmoji = '🌿';
+    } else if (c2.percentage < expectedRanges[2].min * defMult) {
+        constitution = '腎氣不足'; constitutionEmoji = '💧';
+    } else if (c3.percentage < expectedRanges[3].min * defMult) {
+        constitution = '脾氣虛弱'; constitutionEmoji = '🍂';
+    } else if (c4.percentage < expectedRanges[4].min * defMult) {
+        constitution = '肺氣不足'; constitutionEmoji = '🌬️';
+    } else if (healthyOrder && c0.percentage >= expectedRanges[0].min &&
+        (level === 0 || harmonics.every(h => h.status === '正常'))) {
+        constitution = '氣血平衡'; constitutionEmoji = '☯️';
+    } else {
+        constitution = '略有偏差'; constitutionEmoji = '📊';
     }
-    else if (c1.percentage > expectedRanges[1].max * cExcessMult) {
-        constitution = '肝氣偏旺';
-        constitutionEmoji = '🌿';
-    }
-    else if (c2.percentage < expectedRanges[2].min * defMult) {
-        constitution = '腎氣不足';
-        constitutionEmoji = '💧';
-    }
-    else if (c3.percentage < expectedRanges[3].min * defMult) {
-        constitution = '脾氣虛弱';
-        constitutionEmoji = '🍂';
-    }
-    else if (c4.percentage < expectedRanges[4].min * defMult) {
-        constitution = '肺氣不足';
-        constitutionEmoji = '🌬️';
-    }
-    // Healthy pattern: strict requires ALL harmonics in normal range
-    else if (healthyOrder && c0.percentage >= expectedRanges[0].min &&
-        (!strict || harmonics.every(h => h.status === '正常'))) {
-        constitution = '氣血平衡';
-        constitutionEmoji = '☯️';
-    }
-    else {
-        constitution = '略有偏差';
-        constitutionEmoji = '📊';
-    }
+
+    const notes = [
+        '⚠️ rPPG 訊號僅供參考，臨床診斷請使用專業脈診儀',
+        '⚠️ 嚴格模式：標準收窄，僅供深度參考，非臨床診斷',
+        '⚠️ 超級嚴格：極窄標準，極少人達標，純屬研究參考',
+    ];
 
     return {
         harmonics,
         fundFreq: Math.round(fundFreq * 100) / 100,
-        constitution,
-        constitutionEmoji,
-        totalEnergy,
-        healthyOrder,
-        strict: !!strict,
-        note: strict
-            ? '⚠️ 嚴格模式：標準收窄，僅供深度參考，非臨床診斷'
-            : '⚠️ rPPG 訊號僅供參考，臨床診斷請使用專業脈診儀'
+        constitution, constitutionEmoji,
+        totalEnergy, healthyOrder,
+        strict: level,
+        note: notes[level]
     };
 }
