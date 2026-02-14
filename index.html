@@ -932,14 +932,24 @@
                         <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
                             <span>☯️ <span data-i18n="脈診分析（王唯工諧波）">脈診分析（王唯工諧波）</span><span id="constitutionBadge"
                                     style="font-size:0.75rem;opacity:0.8;margin-left:8px"></span></span>
-                            <div class="reorder-btns">
-                                <button onclick="moveSection(this,-1)" title="上移">▲</button>
-                                <button onclick="moveSection(this,1)" title="下移">▼</button>
+                            <div style="display:flex;align-items:center;gap:6px">
+                                <button id="strictPulseBtn" onclick="toggleStrictPulse()"
+                                    style="background:rgba(88,86,214,0.2);color:var(--accent-secondary);border:1px solid rgba(88,86,214,0.3);padding:3px 10px;border-radius:6px;font-size:0.6rem;cursor:pointer">
+                                    📊 <span data-i18n="一般模式">一般模式</span>
+                                </button>
+                                <div class="reorder-btns">
+                                    <button onclick="moveSection(this,-1)" title="上移">▲</button>
+                                    <button onclick="moveSection(this,1)" title="下移">▼</button>
+                                </div>
                             </div>
                         </div>
                         <div class="chart-wrap"><canvas id="harmonicCanvas"></canvas></div>
                         <div id="harmonicDetail"
                             style="display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:6px;margin-top:10px;font-size:0.65rem;">
+                        </div>
+                        <div id="pulseDisclaimer"
+                            style="text-align:center;font-size:0.5rem;color:var(--text-secondary);margin-top:6px;opacity:0.7;padding:4px">
+                            <span data-i18n="⚠️ rPPG 訊號僅供參考，臨床診斷請使用專業脈診儀">⚠️ rPPG 訊號僅供參考，臨床診斷請使用專業脈診儀</span>
                         </div>
                     </div>
                 </div>
@@ -1087,6 +1097,9 @@
         let foreheadYOffset = parseInt(localStorage.getItem('rppg-forehead-offset')) || 0;
         let faceYOffset = parseInt(localStorage.getItem('rppg-face-offset')) || 0;
 
+        // Pulse analysis strict mode
+        let strictPulseMode = localStorage.getItem('rppg-strict-pulse') === 'true';
+
         // Sound
         let audioCtx = null, soundEnabled = false;
 
@@ -1210,6 +1223,10 @@
             '額頭': 'Forehead', '左頰': 'L. Cheek', '右頰': 'R. Cheek',
             '額頭偏移': 'Forehead Offset',
             '臉部偏移': 'Face Offset',
+            '一般模式': 'Normal',
+            '嚴格模式': 'Strict',
+            '⚠️ rPPG 訊號僅供參考，臨床診斷請使用專業脈診儀': '⚠️ rPPG signal is for reference only. Use professional equipment for clinical diagnosis.',
+            '⚠️ 嚴格模式：標準收窄，僅供深度參考，非臨床診斷': '⚠️ Strict mode: narrower ranges, for reference only, not clinical diagnosis.',
         };
 
         // Store original zh text from data-i18n elements
@@ -1319,6 +1336,11 @@
             const savedFC = parseInt(localStorage.getItem('rppg-face-offset')) || 0;
             document.getElementById('faceOffsetSlider').value = savedFC;
             updateFaceOffset(savedFC);
+            // Restore strict pulse mode UI
+            if (strictPulseMode) {
+                strictPulseMode = false; // reset so toggle flips to true
+                toggleStrictPulse();
+            }
         }
 
         function updateForeheadOffset(val) {
@@ -1330,6 +1352,28 @@
             faceYOffset = parseInt(val);
             document.getElementById('faceOffsetVal').textContent = (faceYOffset > 0 ? '+' : '') + faceYOffset;
             localStorage.setItem('rppg-face-offset', faceYOffset);
+        }
+
+        function toggleStrictPulse() {
+            strictPulseMode = !strictPulseMode;
+            localStorage.setItem('rppg-strict-pulse', strictPulseMode);
+            const btn = document.getElementById('strictPulseBtn');
+            if (strictPulseMode) {
+                btn.innerHTML = '🔬 <span data-i18n="嚴格模式">' + t('嚴格模式') + '</span>';
+                btn.style.background = 'rgba(255,45,85,0.2)';
+                btn.style.color = '#ff2d55';
+                btn.style.borderColor = 'rgba(255,45,85,0.3)';
+                document.getElementById('pulseDisclaimer').innerHTML = '<span data-i18n="⚠️ 嚴格模式：標準收窄，僅供深度參考，非臨床診斷">' + t('⚠️ 嚴格模式：標準收窄，僅供深度參考，非臨床診斷') + '</span>';
+            } else {
+                btn.innerHTML = '📊 <span data-i18n="一般模式">' + t('一般模式') + '</span>';
+                btn.style.background = 'rgba(88,86,214,0.2)';
+                btn.style.color = 'var(--accent-secondary)';
+                btn.style.borderColor = 'rgba(88,86,214,0.3)';
+                document.getElementById('pulseDisclaimer').innerHTML = '<span data-i18n="⚠️ rPPG 訊號僅供參考，臨床診斷請使用專業脈診儀">' + t('⚠️ rPPG 訊號僅供參考，臨床診斷請使用專業脈診儀') + '</span>';
+            }
+            // Reset harmonic smoothing so strict mode re-evaluates fresh
+            window._harmonicSamples = 0;
+            window._smoothHarmonics = null;
         }
 
         async function populateCameras() {
@@ -1708,7 +1752,7 @@
 
                     // Pulse Harmonic Analysis (脈診) — quality-gated + accumulated smoothing
                     if (frameCount % 50 === 0 && quality.score >= 40) {
-                        const harmonicData = pulseHarmonicAnalysis(filtered, fps);
+                        const harmonicData = pulseHarmonicAnalysis(filtered, fps, strictPulseMode);
                         if (harmonicData) {
                             if (!window._harmonicSamples) window._harmonicSamples = 0;
                             window._harmonicSamples++;
