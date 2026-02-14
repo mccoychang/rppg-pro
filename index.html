@@ -799,6 +799,18 @@
                         oninput="document.getElementById('threshVal').textContent=this.value+'%'">
                     <span class="val" id="threshVal">70%</span>
                 </div>
+                <div class="threshold-wrap">
+                    <label>📐 <span data-i18n="額頭偏移">額頭偏移</span></label>
+                    <input type="range" id="foreheadOffsetSlider" min="-15" max="15" value="0" step="1"
+                        oninput="updateForeheadOffset(this.value)">
+                    <span class="val" id="foreheadOffsetVal">0</span>
+                </div>
+                <div class="threshold-wrap">
+                    <label>📐 <span data-i18n="臉部偏移">臉部偏移</span></label>
+                    <input type="range" id="faceOffsetSlider" min="-15" max="15" value="0" step="1"
+                        oninput="updateFaceOffset(this.value)">
+                    <span class="val" id="faceOffsetVal">0</span>
+                </div>
                 <button class="btn start" id="startBtn" onclick="toggleMonitoring()">🚀 <span
                         data-i18n="開始偵測">開始偵測</span></button>
             </div>
@@ -1071,6 +1083,10 @@
         let allFaceBoxes = []; // multi-person
         const SM = 0.4;
 
+        // ROI vertical offsets (percentage of face height, -15 to +15)
+        let foreheadYOffset = parseInt(localStorage.getItem('rppg-forehead-offset')) || 0;
+        let faceYOffset = parseInt(localStorage.getItem('rppg-face-offset')) || 0;
+
         // Sound
         let audioCtx = null, soundEnabled = false;
 
@@ -1192,6 +1208,8 @@
             '累積高品質數據...': 'Accumulating quality data...',
             // ROI labels
             '額頭': 'Forehead', '左頰': 'L. Cheek', '右頰': 'R. Cheek',
+            '額頭偏移': 'Forehead Offset',
+            '臉部偏移': 'Face Offset',
         };
 
         // Store original zh text from data-i18n elements
@@ -1250,16 +1268,19 @@
             const f = face;
             const yaw = f.yaw || 0;
             const YAW_THRESHOLD = 0.20; // ~20% offset = ~25° turn
+            // Vertical offsets from user sliders (percentage of face height)
+            const fhOff = f.h * (foreheadYOffset / 100);
+            const fcOff = f.h * (faceYOffset / 100);
             // Forehead (always visible)
-            const fh = { x: f.x + f.w * 0.2, y: f.y - f.h * 0.15, w: f.w * 0.6, h: f.h * 0.18, label: '額頭', colorIdx: 0 };
+            const fh = { x: f.x + f.w * 0.2, y: f.y - f.h * 0.15 + fhOff, w: f.w * 0.6, h: f.h * 0.18, label: '額頭', colorIdx: 0 };
             const roisRaw = [fh];
             // Left cheek: hidden when head turned right (yaw < -threshold)
             if (yaw > -YAW_THRESHOLD) {
-                roisRaw.push({ x: f.x + f.w * 0.12, y: f.y + f.h * 0.35, w: f.w * 0.22, h: f.h * 0.20, label: '左頰', colorIdx: 1 });
+                roisRaw.push({ x: f.x + f.w * 0.12, y: f.y + f.h * 0.35 + fcOff, w: f.w * 0.22, h: f.h * 0.20, label: '左頰', colorIdx: 1 });
             }
             // Right cheek: hidden when head turned left (yaw > threshold)
             if (yaw < YAW_THRESHOLD) {
-                roisRaw.push({ x: f.x + f.w * 0.66, y: f.y + f.h * 0.35, w: f.w * 0.22, h: f.h * 0.20, label: '右頰', colorIdx: 2 });
+                roisRaw.push({ x: f.x + f.w * 0.66, y: f.y + f.h * 0.35 + fcOff, w: f.w * 0.22, h: f.h * 0.20, label: '右頰', colorIdx: 2 });
             }
 
             return roisRaw.map(r => ({
@@ -1291,6 +1312,24 @@
             drawEmptyChart(trendCanvas, trendCtx, t('等待趨勢數據...'));
             drawEmptyChart(harmonicCanvas, harmonicCtx, t('等待脈診數據...'));
             applyLang();
+            // Restore ROI offsets from localStorage
+            const savedFH = parseInt(localStorage.getItem('rppg-forehead-offset')) || 0;
+            document.getElementById('foreheadOffsetSlider').value = savedFH;
+            updateForeheadOffset(savedFH);
+            const savedFC = parseInt(localStorage.getItem('rppg-face-offset')) || 0;
+            document.getElementById('faceOffsetSlider').value = savedFC;
+            updateFaceOffset(savedFC);
+        }
+
+        function updateForeheadOffset(val) {
+            foreheadYOffset = parseInt(val);
+            document.getElementById('foreheadOffsetVal').textContent = (foreheadYOffset > 0 ? '+' : '') + foreheadYOffset;
+            localStorage.setItem('rppg-forehead-offset', foreheadYOffset);
+        }
+        function updateFaceOffset(val) {
+            faceYOffset = parseInt(val);
+            document.getElementById('faceOffsetVal').textContent = (faceYOffset > 0 ? '+' : '') + faceYOffset;
+            localStorage.setItem('rppg-face-offset', faceYOffset);
         }
 
         async function populateCameras() {
